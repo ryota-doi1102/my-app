@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "files": [
+    "../frontend/src/**/*.{ts,tsx}",
+    "../backend/src/**/*.{ts,tsx}",
+    "../shared/**/*.ts"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "*.min.js",
+    "*.lock",
+    "drizzle"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "personal-words",
+      "path": "./words.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["personal-words"],
+  "words": [
+    "hookform",
+    "sonner",
+    "vaul",
+    "cmdk",
+    "zustand",
+    "tanstack",
+    "lucide",
+    "shadcn",
+    "biome",
+    "vite",
+    "tailwindcss",
+    "clsx",
+    "recharts",
+    "embla",
+    "zod",
+    "nonemit",
+    "autoComplete",
+    "destructive",
+    "muted",
+    "foreground",
+    "signin",
+    "signup",
+    "hono",
+    "pino",
+    "drizzle",
+    "postgres",
+    "varchar",
+    "dotenv",
+    "tsx",
+    "nounchecked",
+    "logtape",
+    "ilike"
+  ],
+  "allowCompoundWords": true
+}

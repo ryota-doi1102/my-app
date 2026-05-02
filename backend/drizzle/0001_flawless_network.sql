@@ -1,0 +1,1 @@
+ALTER TABLE "signup_tokens" ADD COLUMN "expires_at" timestamp NOT NULL;
