@@ -7,7 +7,7 @@
 | ID | API-USER-02 |
 | メソッド | PUT |
 | パス | /api/v1/users |
-| 認証 | JWT必須 |
+| 認証 | 不要 |
 | Content-Type | application/json |
 | 概要 | 新規ユーザーアカウントとプロフィールを作成する |
 
@@ -81,40 +81,7 @@
 
 | ステータスコード | 説明 |
 |---|---|
-| 201 | 作成成功 |
-
-```json
-{
-  "status_code": 201,
-  "success": true,
-  "data": {
-    "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "name": "山田太郎",
-    "email": "yamada@example.com",
-    "birthDate": "1990-01-15",
-    "gender": "男性",
-    "profileImageUrl": "https://storage.example.com/profile-images/xxxxx.jpg",
-    "phone": "09012345678",
-    "postalCode": "1500001",
-    "prefecture": "東京都",
-    "city": "渋谷区",
-    "streetAddress": "1-2-3",
-    "building": "渋谷マンション101",
-    "workTypes": ["フルタイム", "リモート"],
-    "qualifications": ["TOEIC 900点"],
-    "workHistories": [
-      {
-        "company": "株式会社ABC",
-        "startMonth": "2020-04",
-        "endMonth": null,
-        "role": "エンジニア"
-      }
-    ],
-    "selfPR": "自己PRテキスト",
-    "createdAt": "2026-04-24T00:00:00.000Z"
-  }
-}
-```
+| 204 | 作成成功（レスポンスボディなし） |
 
 ### エラー時
 
@@ -125,8 +92,6 @@
 | ステータスコード | code | メッセージ | 説明 |
 |---|---|---|---|
 | 400 | BAD_REQUEST | リクエストの形式が正しくありません | JSON のパース失敗・必須パラメータ欠落 |
-| 401 | UNAUTHORIZED | 認証が必要です | 未認証でアクセスした場合 |
-| 401 | UNAUTHORIZED | トークンが無効です | トークンが存在しない・無効化済み・期限切れ |
 | 409 | CONFLICT | メールアドレスが既に登録されています | メールアドレスの重複 |
 | 422 | VALIDATION_ERROR | 氏名は必須項目です | name が未入力 |
 | 422 | VALIDATION_ERROR | 生年月日は必須項目です | birthDate が未入力 |
@@ -153,27 +118,25 @@
 
 ## 処理フロー
 
-1. JWT を検証し、未認証の場合は 401 を返す
-2. リクエストボディを JSON としてパースする。失敗時は 400 を返す
-3. `userProfileCreateSchema`（`shared/schemas/user.ts`）でバリデーションを実行する。失敗時は 422 を返す
-4. email の重複を `users` テーブルで確認する。既存の場合は 409 を返す
+1. リクエストボディを JSON としてパースする。失敗時は 400 を返す
+2. `userProfileCreateBackendSchema`（`backend/src/schemas/user.ts`）でバリデーションを実行する。失敗時は 422 を返す
+3. email の重複を `users` テーブルで確認する。既存の場合は 409 を返す
+4. password をハッシュ化（bcrypt）する
 5. トランザクションを開始する
-   a. password をハッシュ化（bcrypt）する
-   b. `users` テーブルにレコードを挿入する（email, passwordHash）
-   c. profileImage が指定されている場合は base64 デコードしてストレージに保存し、URL を取得する
-   d. `user_profiles` テーブルにレコードを挿入する（userId, name, birthDate, gender, profileImageUrl, phone, postalCode, prefecture, city, streetAddress, building, selfPR）
-   e. `user_work_types` テーブルに workTypes を挿入する（workTypes が指定されている場合）
-   f. `user_qualifications` テーブルに qualifications を挿入する（qualifications が指定されている場合）
-   g. `user_work_histories` テーブルに workHistories を挿入する
+   a. `users` テーブルにレコードを挿入する（email, passwordHash）
+   b. profileImage が指定されている場合は base64 デコードしてローカルストレージに保存し、URL を取得する
+   c. `user_profiles` テーブルにレコードを挿入する（userId, name, birthDate, gender, profileImageUrl, phone, postalCode, prefecture, city, streetAddress, building, selfPR）
+   d. `user_work_types` テーブルに workTypes を挿入する（workTypes が指定されている場合）
+   e. `user_qualifications` テーブルに qualifications を挿入する（qualifications が指定されている場合）
+   f. `user_work_histories` テーブルに workHistories を挿入する
 6. トランザクションをコミットする
-7. 作成したユーザープロフィール情報を 201 で返す
+7. 204 を返す
 
 ## 使用するスキーマ
 
-- `shared/schemas/user.ts` の `userProfileCreateSchema`
+- `backend/src/schemas/user.ts` の `userProfileCreateBackendSchema`（`shared/schemas/user.ts` の `userProfileCreateSchema` を拡張し、`profileImage` を base64 文字列のみ受け付けるよう上書きしたもの）
 
 ## 備考
 
 - profileImage は base64 エンコードされた data URI 形式（例: `data:image/jpeg;base64,...`）で送信する
-- パスワードはレスポンスに含めない
 - agreedToTerms はサーバー側でも `true` であることを検証する

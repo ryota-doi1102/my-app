@@ -83,41 +83,7 @@
 
 | ステータスコード | 説明 |
 |---|---|
-| 200 | 更新成功 |
-
-```json
-{
-  "status_code": 200,
-  "success": true,
-  "data": {
-    "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "name": "山田太郎",
-    "email": "yamada@example.com",
-    "birthDate": "1990-01-15",
-    "gender": "男性",
-    "profileImageUrl": "https://storage.example.com/profile-images/xxxxx.jpg",
-    "phone": "09012345678",
-    "postalCode": "1500001",
-    "prefecture": "東京都",
-    "city": "渋谷区",
-    "streetAddress": "1-2-3",
-    "building": "渋谷マンション101",
-    "workTypes": ["フルタイム", "リモート"],
-    "qualifications": ["TOEIC 900点"],
-    "workHistories": [
-      {
-        "company": "株式会社ABC",
-        "startMonth": "2020-04",
-        "endMonth": null,
-        "role": "エンジニア"
-      }
-    ],
-    "selfPR": "自己PRテキスト",
-    "createdAt": "2026-04-24T00:00:00.000Z",
-    "updatedAt": "2026-04-24T12:00:00.000Z"
-  }
-}
-```
+| 204 | 更新成功（レスポンスボディなし） |
 
 ### エラー時
 
@@ -167,7 +133,7 @@
    e. `user_qualifications` テーブルを既存レコードを削除して再挿入する
    f. `user_work_histories` テーブルを既存レコードを削除して再挿入する
 7. トランザクションをコミットする
-8. 更新後のプロフィール情報を 200 で返す
+8. 204 を返す
 
 ## 使用するスキーマ
 
