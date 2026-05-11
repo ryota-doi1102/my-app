@@ -13,7 +13,7 @@ const healthRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({
 							status: z.string(),
 							timestamp: z.string(),
@@ -30,7 +30,7 @@ health.openapi(healthRoute, (c) => {
 	return c.json(
 		{
 			status_code: 200,
-			success: true,
+			is_success: true,
 			data: {
 				status: "ok",
 				timestamp: new Date().toISOString(),

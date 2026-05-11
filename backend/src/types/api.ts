@@ -11,17 +11,17 @@ export type ErrorCode =
 /** 成功レスポンス */
 export interface SuccessResponse<T> {
   status_code: number;
-  success: true;
+  is_success: true;
   data: T;
 }
 
 /** エラーレスポンス */
 export interface ErrorResponse {
   status_code: number;
-  success: false;
+  is_success: false;
   error: {
     code: ErrorCode;
-    message: string;
+    messages: string[];
   };
 }
 

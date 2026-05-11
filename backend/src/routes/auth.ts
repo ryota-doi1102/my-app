@@ -11,7 +11,7 @@ import { authService } from "../services/authService/index.js";
 
 const errorResponseSchema = z.object({
 	status_code: z.number(),
-	success: z.literal(false),
+	is_success: z.literal(false),
 	error: z.object({ code: z.string(), message: z.string() }),
 });
 
@@ -21,10 +21,10 @@ const authRoute = new OpenAPIHono({
 			return c.json(
 				{
 					status_code: 422,
-					success: false,
+					is_success: false,
 					error: {
 						code: "VALIDATION_ERROR",
-						message: result.error.issues[0]?.message ?? "バリデーションエラーが発生しました",
+						messages: result.error.issues.map((i: { message: string }) => i.message),
 					},
 				},
 				422,
@@ -51,7 +51,7 @@ const signupRequestRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({ token: z.string().uuid() }),
 					}),
 				},
@@ -76,7 +76,7 @@ const signupRequestRoute = createRoute({
 authRoute.openapi(signupRequestRoute, async (c) => {
 	const { email } = c.req.valid("json");
 	const data = await authService.requestSignup(email);
-	return c.json({ status_code: 201, success: true, data }, 201);
+	return c.json({ status_code: 201, is_success: true, data }, 201);
 });
 
 /** POST /api/v1/auth/signup — サインアップ実行 */
@@ -97,7 +97,7 @@ const signupRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({ accessToken: z.string() }),
 					}),
 				},
@@ -130,7 +130,7 @@ const signupRoute = createRoute({
 authRoute.openapi(signupRoute, async (c) => {
 	const { token, email, password } = c.req.valid("json");
 	const data = await authService.signup(token, email, password);
-	return c.json({ status_code: 201, success: true, data }, 201);
+	return c.json({ status_code: 201, is_success: true, data }, 201);
 });
 
 /** POST /api/v1/auth/signin — サインイン */
@@ -151,7 +151,7 @@ const signinRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({
 							accessToken: z.string(),
 							refreshToken: z.string(),
@@ -183,7 +183,7 @@ const signinRoute = createRoute({
 authRoute.openapi(signinRoute, async (c) => {
 	const { email, password } = c.req.valid("json");
 	const data = await authService.signin(email, password);
-	return c.json({ status_code: 200, success: true, data }, 200);
+	return c.json({ status_code: 200, is_success: true, data }, 200);
 });
 
 /** POST /api/v1/auth/refresh — トークンリフレッシュ */
@@ -204,7 +204,7 @@ const refreshRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({
 							accessToken: z.string(),
 							refreshToken: z.string(),
@@ -236,7 +236,7 @@ const refreshRoute = createRoute({
 authRoute.openapi(refreshRoute, async (c) => {
 	const { refreshToken } = c.req.valid("json");
 	const data = await authService.refresh(refreshToken);
-	return c.json({ status_code: 200, success: true, data }, 200);
+	return c.json({ status_code: 200, is_success: true, data }, 200);
 });
 
 /** POST /api/v1/auth/signout — サインアウト */
@@ -257,7 +257,7 @@ const signoutRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.null(),
 					}),
 				},
@@ -286,7 +286,7 @@ const signoutRoute = createRoute({
 authRoute.openapi(signoutRoute, async (c) => {
 	const { refreshToken } = c.req.valid("json");
 	await authService.signout(refreshToken);
-	return c.json({ status_code: 200, success: true, data: null }, 200);
+	return c.json({ status_code: 200, is_success: true, data: null }, 200);
 });
 
 /** POST /api/v1/auth/password-reset/request — パスワードリセットトークン発行 */
@@ -307,7 +307,7 @@ const passwordResetRequestRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.object({ token: z.string().uuid() }),
 					}),
 				},
@@ -336,7 +336,7 @@ const passwordResetRequestRoute = createRoute({
 authRoute.openapi(passwordResetRequestRoute, async (c) => {
 	const { email } = c.req.valid("json");
 	const data = await authService.requestPasswordReset(email);
-	return c.json({ status_code: 201, success: true, data }, 201);
+	return c.json({ status_code: 201, is_success: true, data }, 201);
 });
 
 /** POST /api/v1/auth/password-reset — パスワードリセット実行 */
@@ -357,7 +357,7 @@ const passwordResetRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						status_code: z.number(),
-						success: z.literal(true),
+						is_success: z.literal(true),
 						data: z.null(),
 					}),
 				},
@@ -390,7 +390,7 @@ const passwordResetRoute = createRoute({
 authRoute.openapi(passwordResetRoute, async (c) => {
 	const { token, password } = c.req.valid("json");
 	await authService.resetPassword(token, password);
-	return c.json({ status_code: 200, success: true, data: null }, 200);
+	return c.json({ status_code: 200, is_success: true, data: null }, 200);
 });
 
 export { authRoute };

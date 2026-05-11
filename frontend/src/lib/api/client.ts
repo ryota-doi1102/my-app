@@ -1,17 +1,17 @@
 import { clearTokens, getAccessToken } from "@/lib/auth";
 
 export class ApiError extends Error {
-	constructor(
-		public readonly status: number,
-		message: string,
-	) {
+	readonly status: number;
+
+	constructor(status: number, message: string) {
 		super(message);
+		this.status = status;
 	}
 }
 
 type ErrorBody = {
-	success: false;
-	error: { code: string; message: string };
+	is_success: false;
+	error: { code: string; messages: string[] };
 };
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -35,7 +35,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 			return undefined as T;
 		}
 		const body = (await response.json()) as ErrorBody;
-		throw new ApiError(response.status, body.error?.message ?? "エラーが発生しました");
+		throw new ApiError(response.status, body.error?.messages?.[0] ?? "エラーが発生しました");
 	}
 
 	return response.json() as Promise<T>;

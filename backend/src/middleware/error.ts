@@ -22,6 +22,16 @@ export async function errorHandler(
 ): Promise<Response> {
 	const isProduction = process.env.NODE_ENV === "production";
 
+	// JSON パースエラー（ボディなし・不正な JSON）は 400 を返す
+	if (err instanceof SyntaxError) {
+		const body: ErrorResponse = {
+			status_code: 400,
+			is_success: false,
+			error: { code: "BAD_REQUEST", messages: ["リクエストの形式が正しくありません"] },
+		};
+		return c.json(body, 400);
+	}
+
 	// AppError（想定済みエラー）はそのままレスポンスに変換する
 	if (err instanceof AppError) {
 		logger.error("AppError が発生", {
@@ -31,8 +41,8 @@ export async function errorHandler(
 		});
 		const body: ErrorResponse = {
 			status_code: err.statusCode,
-			success: false,
-			error: { code: err.code, message: err.message },
+			is_success: false,
+			error: { code: err.code, messages: [err.message] },
 		};
 		return c.json(body, err.statusCode as Parameters<typeof c.json>[1]);
 	}
@@ -50,8 +60,8 @@ export async function errorHandler(
 
 	const body: ErrorResponse = {
 		status_code: 500,
-		success: false,
-		error: { code: "INTERNAL_SERVER_ERROR", message },
+		is_success: false,
+		error: { code: "INTERNAL_SERVER_ERROR", messages: [message] },
 	};
 	return c.json(body, 500);
 }
@@ -61,8 +71,8 @@ export async function notFoundHandler(c: Context): Promise<Response> {
 	logger.warn("存在しないパスへのリクエスト", { path: c.req.path });
 	const body: ErrorResponse = {
 		status_code: 404,
-		success: false,
-		error: { code: "NOT_FOUND", message: "Resource not found" },
+		is_success: false,
+		error: { code: "NOT_FOUND", messages: ["Resource not found"] },
 	};
 	return c.json(body, 404);
 }
