@@ -11,7 +11,7 @@ DB-USER-01
 | user_id | uuid | ✓ | - | - | FK → users.id |
 | name | varchar(100) | - | - | - | 氏名 |
 | birth_date | date | - | - | - | 生年月日 |
-| gender_id | uuid | - | - | - | FK → genders.id |
+| gender | gender enum | - | - | - | 性別（`男性` / `女性` / `その他`） |
 | profile_image_url | text | - | - | - | プロフィール画像URL |
 | phone | varchar(11) | - | - | - | 電話番号（数字のみ・10〜11桁） |
 | postal_code | varchar(7) | - | - | - | 郵便番号（数字のみ・7桁固定） |
@@ -32,14 +32,13 @@ DB-USER-01
 | カラム名 | 参照テーブル | 参照カラム | 削除時の動作 |
 |---|---|---|---|
 | user_id | users | id | cascade |
-| gender_id | genders | id | set null |
 
 <!-- 削除時の動作の選択肢: cascade / restrict / set null -->
 
 ## 備考
 
 - 電話番号・郵便番号はハイフンなしの数字のみで保存する
-- `gender_id` は `genders` テーブルの id を参照する
+- `gender` は PostgreSQL Enum 型（`gender`）で管理する（→ DB-MASTER-01）
 - `profile_image_url` はサーバーローカルの相対パス（例: `/uploads/profile-images/{uuid}.jpg`）を保存する
   - 実ファイルは `backend/uploads/profile-images/` に保存する
   - `GET /uploads/profile-images/:filename` で静的ファイルとして配信する

@@ -1,33 +1,44 @@
-# work_types
+# work_type（PostgreSQL Enum型）
 
-## テーブルID
+## ID
 DB-MASTER-02
 
-## テーブル定義
+## 概要
 
-| カラム名（snake_case） | 型 | 必須 | 一意 | デフォルト | 説明 |
-|---|---|---|---|---|---|
-| id | uuid | ✓ | ✓ | auto | PK |
-| name | varchar(20) | ✓ | ✓ | - | 勤務形態名（`フルタイム` / `パートタイム` / `リモート` / `フリーランス`） |
-| sort_order | integer | ✓ | - | - | 表示順 |
-| created_at | timestamp | ✓ | - | now() | 作成日時 |
+希望勤務形態を表す PostgreSQL の Enum 型。テーブルではなく型として定義されており、`user_work_types.work_type` カラムで使用する。
 
-## インデックス
+## Enum 値
 
-| カラム名 | 種別 |
+| 値 | 説明 | 表示順 |
+|---|---|---|
+| フルタイム | フルタイム勤務 | 1 |
+| パートタイム | パートタイム勤務 | 2 |
+| リモート | リモートワーク | 3 |
+| フリーランス | フリーランス | 4 |
+
+## 型定義（Drizzle）
+
+```ts
+// backend/src/db/schema/DB-MASTER-02.ts
+export const workTypeEnum = pgEnum("work_type", ["フルタイム", "パートタイム", "リモート", "フリーランス"]);
+```
+
+## 共有型定義（Zod）
+
+```ts
+// shared/schemas/user.ts
+export const WORK_TYPES = ['フルタイム', 'パートタイム', 'リモート', 'フリーランス'] as const
+workTypes: z.array(z.enum(WORK_TYPES))
+```
+
+## 使用箇所
+
+| テーブル | カラム |
 |---|---|
-| sort_order | index |
-
-## 初期データ（シード）
-
-| sort_order | name |
-|---|---|
-| 1 | フルタイム |
-| 2 | パートタイム |
-| 3 | リモート |
-| 4 | フリーランス |
+| user_work_types | work_type |
 
 ## 備考
 
-- 運用中の追加・変更・削除は行わない想定（アプリリリース時にシード投入）
-- `sort_order` の昇順で UI に表示する
+- 値の追加は `ALTER TYPE work_type ADD VALUE '...'` で可能（マイグレーション必須）
+- 値の削除・変更は PostgreSQL の制約上困難なため、原則として行わない
+- シード不要（Enum 型のためデータ投入は不要）

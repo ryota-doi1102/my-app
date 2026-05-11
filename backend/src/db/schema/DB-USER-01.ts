@@ -1,6 +1,13 @@
-import { date, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import { genders } from "./DB-MASTER-01.js";
+import {
+	date,
+	pgTable,
+	text,
+	timestamp,
+	uuid,
+	varchar,
+} from "drizzle-orm/pg-core";
 import { users } from "./DB-AUTH-01.js";
+import { genderEnum } from "./DB-MASTER-01.js";
 
 export const userProfiles = pgTable("user_profiles", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -9,7 +16,7 @@ export const userProfiles = pgTable("user_profiles", {
 		.references(() => users.id, { onDelete: "cascade" }),
 	name: varchar("name", { length: 100 }),
 	birthDate: date("birth_date"),
-	genderId: uuid("gender_id").references(() => genders.id, { onDelete: "set null" }),
+	gender: genderEnum("gender"),
 	profileImageUrl: text("profile_image_url"),
 	phone: varchar("phone", { length: 11 }),
 	postalCode: varchar("postal_code", { length: 7 }),

@@ -1,32 +1,42 @@
-# genders
+# gender（PostgreSQL Enum型）
 
-## テーブルID
+## ID
 DB-MASTER-01
 
-## テーブル定義
+## 概要
 
-| カラム名（snake_case） | 型 | 必須 | 一意 | デフォルト | 説明 |
-|---|---|---|---|---|---|
-| id | uuid | ✓ | ✓ | auto | PK |
-| name | varchar(10) | ✓ | ✓ | - | 性別名（`男性` / `女性` / `その他`） |
-| sort_order | integer | ✓ | - | - | 表示順 |
-| created_at | timestamp | ✓ | - | now() | 作成日時 |
+性別を表す PostgreSQL の Enum 型。テーブルではなく型として定義されており、`user_profiles.gender` カラムで使用する。
 
-## インデックス
+## Enum 値
 
-| カラム名 | 種別 |
+| 値 | 説明 | 表示順 |
+|---|---|---|
+| 男性 | 男性 | 1 |
+| 女性 | 女性 | 2 |
+| その他 | その他 | 3 |
+
+## 型定義（Drizzle）
+
+```ts
+// backend/src/db/schema/DB-MASTER-01.ts
+export const genderEnum = pgEnum("gender", ["男性", "女性", "その他"]);
+```
+
+## 共有型定義（Zod）
+
+```ts
+// shared/schemas/user.ts
+gender: z.enum(['男性', '女性', 'その他'])
+```
+
+## 使用箇所
+
+| テーブル | カラム |
 |---|---|
-| sort_order | index |
-
-## 初期データ（シード）
-
-| sort_order | name |
-|---|---|
-| 1 | 男性 |
-| 2 | 女性 |
-| 3 | その他 |
+| user_profiles | gender |
 
 ## 備考
 
-- 運用中の追加・変更・削除は行わない想定（アプリリリース時にシード投入）
-- `sort_order` の昇順で UI に表示する
+- 値の追加は `ALTER TYPE gender ADD VALUE '...'` で可能（マイグレーション必須）
+- 値の削除・変更は PostgreSQL の制約上困難なため、原則として行わない
+- シード不要（Enum 型のためデータ投入は不要）

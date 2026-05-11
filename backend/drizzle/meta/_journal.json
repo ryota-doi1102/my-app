@@ -36,6 +36,13 @@
       "when": 1777424010462,
       "tag": "0004_optimal_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1746921600000,
+      "tag": "0005_enum_gender_worktype",
+      "breakpoints": true
     }
   ]
 }

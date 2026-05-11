@@ -1,15 +1,13 @@
 import { integer, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./DB-AUTH-01.js";
-import { workTypes } from "./DB-MASTER-02.js";
+import { workTypeEnum } from "./DB-MASTER-02.js";
 
 export const userWorkTypes = pgTable("user_work_types", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	userId: uuid("user_id")
 		.notNull()
 		.references(() => users.id, { onDelete: "cascade" }),
-	workTypeId: uuid("work_type_id")
-		.notNull()
-		.references(() => workTypes.id, { onDelete: "restrict" }),
+	workType: workTypeEnum("work_type").notNull(),
 	sortOrder: integer("sort_order").notNull().default(0),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 });

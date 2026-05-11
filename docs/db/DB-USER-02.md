@@ -9,7 +9,7 @@ DB-USER-02
 |---|---|---|---|---|---|
 | id | uuid | ✓ | ✓ | auto | PK |
 | user_id | uuid | ✓ | - | - | FK → users.id |
-| work_type_id | uuid | ✓ | - | - | FK → work_types.id |
+| work_type | work_type enum | ✓ | - | - | 希望勤務形態（`フルタイム` / `パートタイム` / `リモート` / `フリーランス`） |
 | sort_order | integer | ✓ | - | 0 | 表示順 |
 | created_at | timestamp | ✓ | - | now() | 作成日時 |
 
@@ -18,10 +18,10 @@ DB-USER-02
 | カラム名 | 参照テーブル | 参照カラム | 削除時の動作 |
 |---|---|---|---|
 | user_id | users | id | cascade |
-| work_type_id | work_types | id | restrict |
 
 ## 備考
 
 - 1ユーザーが複数の勤務形態を持つ中間テーブル
+- `work_type` は PostgreSQL Enum 型（`work_type`）で管理する（→ DB-MASTER-02）
 - プロフィール更新時は既存レコードを全件削除して再挿入する（洗い替え）
 - users レコード削除時に cascade で自動削除される
