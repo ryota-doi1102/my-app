@@ -182,8 +182,8 @@ backend/
 | Method | Path | 認証 | 説明 |
 |---|---|---|---|
 | GET | /health | 不要 | ヘルスチェック |
-| GET | /api/v1/users | JWT 必須 | ユーザー一覧 |
-| POST | /api/v1/users | 不要 | ユーザー作成 |
+| POST | /api/v1/users | JWT 必須 | ユーザー一覧検索 |
+| PUT | /api/v1/users | 不要 | ユーザー作成 |
 
 ### Error Response Format
 

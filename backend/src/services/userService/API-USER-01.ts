@@ -1,11 +1,7 @@
-import { and, asc, count, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import {
-	userProfiles,
-	userWorkTypes,
-	users,
-	workTypes,
-} from "../../db/schema.js";
+import type { WorkTypeEnumValue } from "../../db/schema.js";
+import { userProfiles, users, userWorkTypes } from "../../db/schema.js";
 import { getAppLogger } from "../../lib/logger.js";
 
 const logger = getAppLogger(["services", "users", "API-USER-01"]);
@@ -38,7 +34,16 @@ type SearchResult = {
 };
 
 export async function searchUsers(params: SearchParams): Promise<SearchResult> {
-	const { name, email, phone, workTypeNames, sortKey, sortOrder, page, perPage } = params;
+	const {
+		name,
+		email,
+		phone,
+		workTypeNames,
+		sortKey,
+		sortOrder,
+		page,
+		perPage,
+	} = params;
 
 	const conditions = [isNull(users.deletedAt)];
 
@@ -53,10 +58,12 @@ export async function searchUsers(params: SearchParams): Promise<SearchResult> {
 				db
 					.select({ userId: userWorkTypes.userId })
 					.from(userWorkTypes)
-					.innerJoin(workTypes, and(
-						sql`${workTypes.id} = ${userWorkTypes.workTypeId}`,
-						inArray(workTypes.name, workTypeNames),
-					)),
+					.where(
+						inArray(
+							userWorkTypes.workType,
+							workTypeNames as WorkTypeEnumValue[],
+						),
+					),
 			),
 		);
 	}
@@ -104,16 +111,15 @@ export async function searchUsers(params: SearchParams): Promise<SearchResult> {
 		const workTypeRows = await db
 			.select({
 				userId: userWorkTypes.userId,
-				name: workTypes.name,
+				workType: userWorkTypes.workType,
 			})
 			.from(userWorkTypes)
-			.innerJoin(workTypes, eq(workTypes.id, userWorkTypes.workTypeId))
 			.where(inArray(userWorkTypes.userId, userIds))
 			.orderBy(asc(userWorkTypes.sortOrder));
 
 		for (const wt of workTypeRows) {
 			const existing = workTypeMap.get(wt.userId) ?? [];
-			existing.push(wt.name);
+			existing.push(wt.workType);
 			workTypeMap.set(wt.userId, existing);
 		}
 	}

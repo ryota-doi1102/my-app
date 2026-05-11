@@ -26,10 +26,10 @@ export function calcAge(birthDate: string): number {
 }
 
 export const workHistoryItemSchema = z.object({
-	company: z.string().min(1, '会社名は必須項目です'),
-	startMonth: z.string().min(1, '在籍開始月は必須項目です'),
+	company: z.string({ required_error: '会社名は必須項目です' }).min(1, '会社名は必須項目です'),
+	startMonth: z.string({ required_error: '在籍開始月は必須項目です' }).min(1, '在籍開始月は必須項目です'),
 	endMonth: z.string().nullable().optional(),
-	role: z.string().min(1, '役職は必須項目です'),
+	role: z.string({ required_error: '役職は必須項目です' }).min(1, '役職は必須項目です'),
 })
 
 export type WorkHistoryItem = z.infer<typeof workHistoryItemSchema>
@@ -39,9 +39,9 @@ export const qualificationItemSchema = z.object({
 })
 
 export const userProfileCreateSchema = z.object({
-	name: z.string().min(1, '氏名は必須項目です'),
+	name: z.string({ required_error: '氏名は必須項目です' }).min(1, '氏名は必須項目です'),
 	birthDate: z
-		.string()
+		.string({ required_error: '生年月日は必須項目です' })
 		.min(1, '生年月日は必須項目です')
 		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), '生年月日はYYYY-MM-DD形式で入力してください')
 		.refine((val) => calcAge(val) >= 18, '18歳未満の方は登録できません')
@@ -71,11 +71,11 @@ export const userProfileCreateSchema = z.object({
 			'電話番号の形式が正しくありません',
 		),
 	email: z
-		.string()
+		.string({ required_error: 'メールアドレスは必須項目です' })
 		.min(1, 'メールアドレスは必須項目です')
 		.email('メールアドレスはメールアドレス形式で入力してください'),
 	password: z
-		.string()
+		.string({ required_error: 'パスワードは必須項目です' })
 		.min(1, 'パスワードは必須項目です')
 		.min(8, 'パスワードは8文字以上で入力してください'),
 	postalCode: z
@@ -91,11 +91,18 @@ export const userProfileCreateSchema = z.object({
 	building: z.string().optional(),
 	workTypes: z.array(z.enum(WORK_TYPES)).optional(),
 	qualifications: z.array(qualificationItemSchema).optional(),
-	workHistories: z.array(workHistoryItemSchema).min(1, '職歴を1件以上入力してください'),
+	workHistories: z
+		.array(workHistoryItemSchema, { required_error: '職歴を1件以上入力してください' })
+		.min(1, '職歴を1件以上入力してください'),
 	selfPR: z.string().optional(),
-	agreedToTerms: z.boolean().refine((val) => val === true, {
-		message: '利用規約・プライバシーポリシーへの同意が必要です',
-	}),
+	agreedToTerms: z
+		.boolean({
+			required_error: '利用規約・プライバシーポリシーへの同意が必要です',
+			invalid_type_error: '利用規約・プライバシーポリシーへの同意が必要です',
+		})
+		.refine((val) => val === true, {
+			message: '利用規約・プライバシーポリシーへの同意が必要です',
+		}),
 })
 
 export type UserProfileCreateInput = z.infer<typeof userProfileCreateSchema>

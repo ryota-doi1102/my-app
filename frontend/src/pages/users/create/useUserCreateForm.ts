@@ -63,7 +63,7 @@ export function useUserCreateForm() {
 			const profileImageBase64 =
 				data.profileImage instanceof File ? await fileToBase64(data.profileImage) : null;
 
-			const result = await createUserProfile({
+			await createUserProfile({
 				name: data.name,
 				birthDate: data.birthDate,
 				gender: data.gender,
@@ -82,7 +82,7 @@ export function useUserCreateForm() {
 				selfPR: data.selfPR,
 				agreedToTerms: true,
 			});
-			navigate(`/users/${result.id}`, {
+			navigate("/users/list", {
 				state: { snackbar: { severity: "success", message: "プロフィールを保存しました" } },
 			});
 		} catch (err) {

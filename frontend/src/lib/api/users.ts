@@ -72,7 +72,7 @@ type CreateUserProfileParams = {
 type UpdateUserProfileParams = Omit<CreateUserProfileParams, "password" | "agreedToTerms">;
 
 export async function searchUsers(params: SearchUsersParams): Promise<SearchUsersResult> {
-	const res = await apiFetch<{ success: true; data: SearchUsersResult }>("/api/v1/users", {
+	const res = await apiFetch<{ is_success: true; data: SearchUsersResult }>("/api/v1/users", {
 		method: "POST",
 		body: JSON.stringify({
 			name: params.name ?? "",
@@ -89,29 +89,25 @@ export async function searchUsers(params: SearchUsersParams): Promise<SearchUser
 }
 
 export async function getUserProfile(id: string): Promise<UserProfileDetail> {
-	const res = await apiFetch<{ success: true; data: UserProfileDetail }>(`/api/v1/users/${id}`);
+	const res = await apiFetch<{ is_success: true; data: UserProfileDetail }>(`/api/v1/users/${id}`);
 	return res.data;
 }
 
-export async function createUserProfile(
-	params: CreateUserProfileParams,
-): Promise<UserProfileDetail> {
-	const res = await apiFetch<{ success: true; data: UserProfileDetail }>("/api/v1/users", {
+export async function createUserProfile(params: CreateUserProfileParams): Promise<void> {
+	await apiFetch<void>("/api/v1/users", {
 		method: "PUT",
 		body: JSON.stringify(params),
 	});
-	return res.data;
 }
 
 export async function updateUserProfile(
 	id: string,
 	params: UpdateUserProfileParams,
-): Promise<UserProfileDetail> {
-	const res = await apiFetch<{ success: true; data: UserProfileDetail }>(`/api/v1/users/${id}`, {
+): Promise<void> {
+	await apiFetch<void>(`/api/v1/users/${id}`, {
 		method: "PUT",
 		body: JSON.stringify(params),
 	});
-	return res.data;
 }
 
 export async function deleteUser(id: string): Promise<void> {

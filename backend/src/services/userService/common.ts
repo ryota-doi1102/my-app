@@ -1,16 +1,14 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
-	genders,
 	userProfiles,
 	userQualifications,
+	users,
 	userWorkHistories,
 	userWorkTypes,
-	users,
-	workTypes,
 } from "../../db/schema.js";
 import { getAppLogger } from "../../lib/logger.js";
 import { AppError } from "../../middleware/error.js";
@@ -45,15 +43,16 @@ export type UserProfileDetail = {
 	updatedAt: string;
 };
 
-export async function getUserProfileById(userId: string): Promise<UserProfileDetail | null> {
+export async function getUserProfileById(
+	userId: string,
+): Promise<UserProfileDetail | null> {
 	const [row] = await db
 		.select({
 			userId: users.id,
 			email: users.email,
-			usersCreatedAt: users.createdAt,
 			name: userProfiles.name,
 			birthDate: userProfiles.birthDate,
-			genderName: genders.name,
+			gender: userProfiles.gender,
 			profileImageUrl: userProfiles.profileImageUrl,
 			phone: userProfiles.phone,
 			postalCode: userProfiles.postalCode,
@@ -67,7 +66,6 @@ export async function getUserProfileById(userId: string): Promise<UserProfileDet
 		})
 		.from(users)
 		.innerJoin(userProfiles, eq(userProfiles.userId, users.id))
-		.leftJoin(genders, eq(genders.id, userProfiles.genderId))
 		.where(and(eq(users.id, userId), isNull(users.deletedAt)))
 		.limit(1);
 
@@ -75,9 +73,8 @@ export async function getUserProfileById(userId: string): Promise<UserProfileDet
 
 	const [workTypeRows, qualRows, historyRows] = await Promise.all([
 		db
-			.select({ name: workTypes.name })
+			.select({ workType: userWorkTypes.workType })
 			.from(userWorkTypes)
-			.innerJoin(workTypes, eq(workTypes.id, userWorkTypes.workTypeId))
 			.where(eq(userWorkTypes.userId, userId))
 			.orderBy(asc(userWorkTypes.sortOrder)),
 		db
@@ -102,7 +99,7 @@ export async function getUserProfileById(userId: string): Promise<UserProfileDet
 		name: row.name ?? null,
 		email: row.email,
 		birthDate: row.birthDate ?? null,
-		gender: row.genderName ?? null,
+		gender: row.gender ?? null,
 		profileImageUrl: row.profileImageUrl ?? null,
 		phone: row.phone ?? null,
 		postalCode: row.postalCode ?? null,
@@ -110,7 +107,7 @@ export async function getUserProfileById(userId: string): Promise<UserProfileDet
 		city: row.city ?? null,
 		streetAddress: row.streetAddress ?? null,
 		building: row.building ?? null,
-		workTypes: workTypeRows.map((r) => r.name),
+		workTypes: workTypeRows.map((r) => r.workType),
 		qualifications: qualRows.map((r) => r.value),
 		workHistories: historyRows.map((r) => ({
 			company: r.company,
@@ -127,7 +124,11 @@ export async function getUserProfileById(userId: string): Promise<UserProfileDet
 export async function saveProfileImage(dataUri: string): Promise<string> {
 	const match = dataUri.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s);
 	if (!match || !match[1] || !match[2]) {
-		throw new AppError(422, "VALIDATION_ERROR", "対応していないファイル形式です");
+		throw new AppError(
+			422,
+			"VALIDATION_ERROR",
+			"対応していないファイル形式です",
+		);
 	}
 	const mimeType = match[1];
 	const base64Data = match[2];
@@ -143,7 +144,9 @@ export async function saveProfileImage(dataUri: string): Promise<string> {
 	return `/uploads/profile-images/${filename}`;
 }
 
-export async function deleteProfileImageFile(profileImageUrl: string | null): Promise<void> {
+export async function deleteProfileImageFile(
+	profileImageUrl: string | null,
+): Promise<void> {
 	if (!profileImageUrl) return;
 	const filename = profileImageUrl.split("/").at(-1);
 	if (!filename) return;
@@ -152,6 +155,8 @@ export async function deleteProfileImageFile(profileImageUrl: string | null): Pr
 		await unlink(filepath);
 		logger.info("プロフィール画像削除完了", { filename });
 	} catch {
-		logger.warn("プロフィール画像の削除に失敗（ファイルが存在しない可能性）", { filename });
+		logger.warn("プロフィール画像の削除に失敗（ファイルが存在しない可能性）", {
+			filename,
+		});
 	}
 }
