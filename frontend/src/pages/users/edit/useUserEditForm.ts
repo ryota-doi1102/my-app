@@ -1,12 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { UserProfileCreateInput } from "@shared/schemas/user";
-import { calcAge, userProfileCreateSchema } from "@shared/schemas/user";
+import type { UserProfileEditInput } from "@shared/schemas/user";
+import { calcAge, userProfileEditSchema } from "@shared/schemas/user";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { createUserProfile, fileToBase64 } from "@/lib/api/users";
+import type { UserProfileDetail } from "@/lib/api/users";
+import { fileToBase64, updateUserProfile } from "@/lib/api/users";
 
-export function useUserCreateForm() {
+export function useUserEditForm(userId: string, initialData: UserProfileDetail) {
 	const navigate = useNavigate();
 	const [apiError, setApiError] = useState<string | null>(null);
 	const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -17,25 +18,24 @@ export function useUserCreateForm() {
 		watch,
 		setValue,
 		formState: { isSubmitting, isDirty },
-	} = useForm<UserProfileCreateInput>({
-		resolver: zodResolver(userProfileCreateSchema),
+	} = useForm<UserProfileEditInput>({
+		resolver: zodResolver(userProfileEditSchema),
 		defaultValues: {
-			name: "",
-			birthDate: "",
-			profileImage: undefined,
-			phone: "",
-			email: "",
-			password: "",
-			postalCode: "",
-			prefecture: "",
-			city: "",
-			streetAddress: "",
-			building: "",
-			workTypes: [],
-			qualifications: [],
-			workHistories: [{ company: "", startMonth: "", endMonth: null, role: "" }],
-			selfPR: "",
-			agreedToTerms: false,
+			name: initialData.name ?? "",
+			birthDate: initialData.birthDate ?? "",
+			gender: (initialData.gender as UserProfileEditInput["gender"]) ?? undefined,
+			profileImage: initialData.profileImageUrl ?? null,
+			phone: initialData.phone ?? null,
+			email: initialData.email,
+			postalCode: initialData.postalCode ?? null,
+			prefecture: initialData.prefecture ?? null,
+			city: initialData.city ?? null,
+			streetAddress: initialData.streetAddress ?? null,
+			building: initialData.building ?? null,
+			workTypes: (initialData.workTypes as UserProfileEditInput["workTypes"]) ?? [],
+			qualifications: initialData.qualifications.map((v) => ({ value: v })),
+			workHistories: initialData.workHistories,
+			selfPR: initialData.selfPR ?? null,
 		},
 	});
 
@@ -58,37 +58,35 @@ export function useUserCreateForm() {
 	const qualificationFieldArray = useFieldArray({ control, name: "qualifications" });
 	const workHistoryFieldArray = useFieldArray({ control, name: "workHistories" });
 
-	async function onSubmit(data: UserProfileCreateInput) {
+	async function onSubmit(data: UserProfileEditInput) {
 		setApiError(null);
 		try {
-			const profileImageBase64 =
+			const profileImageResult =
 				data.profileImage instanceof File
 					? await fileToBase64(data.profileImage)
 					: typeof data.profileImage === "string"
 						? undefined
-						: data.profileImage; // null → null (削除), undefined → undefined (未選択)
+						: data.profileImage; // null → null (削除), undefined → undefined (変更なし)
 
-			await createUserProfile({
+			await updateUserProfile(userId, {
 				name: data.name,
 				birthDate: data.birthDate,
 				gender: data.gender,
-				profileImage: profileImageBase64,
+				profileImage: profileImageResult,
 				phone: data.phone || null,
 				email: data.email,
-				password: data.password,
 				postalCode: data.postalCode || null,
 				prefecture: data.prefecture || null,
 				city: data.city || null,
 				streetAddress: data.streetAddress || null,
 				building: data.building || null,
-				workTypes: data.workTypes,
-				qualifications: data.qualifications,
+				workTypes: data.workTypes ?? [],
+				qualifications: data.qualifications ?? [],
 				workHistories: data.workHistories,
 				selfPR: data.selfPR || null,
-				agreedToTerms: true,
 			});
-			navigate("/users/list", {
-				state: { snackbar: { severity: "success", message: "プロフィールを保存しました" } },
+			navigate(`/users/${userId}`, {
+				state: { snackbar: { severity: "success", message: "プロフィールを更新しました" } },
 			});
 		} catch (err) {
 			setApiError(
@@ -101,13 +99,13 @@ export function useUserCreateForm() {
 		if (isDirty) {
 			setCancelDialogOpen(true);
 		} else {
-			navigate("/users/list");
+			navigate(`/users/${userId}`);
 		}
 	}
 
 	function confirmCancel() {
 		setCancelDialogOpen(false);
-		navigate("/users/list");
+		navigate(`/users/${userId}`);
 	}
 
 	function removeProfileImage() {

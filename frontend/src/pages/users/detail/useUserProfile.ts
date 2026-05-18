@@ -68,13 +68,14 @@ export function useUserProfile() {
 		handleSubmit,
 		watch,
 		reset,
+		setValue,
 		formState: { isSubmitting, isDirty },
 	} = useForm<UserProfileEditInput>({
 		resolver: zodResolver(userProfileEditSchema),
 		defaultValues: {
 			name: "",
 			birthDate: "",
-			profileImage: null,
+			profileImage: undefined,
 			phone: "",
 			email: "",
 			postalCode: "",
@@ -97,7 +98,7 @@ export function useUserProfile() {
 			.then((detail) => {
 				const profile = toUserProfile(detail);
 				setUser(profile);
-				reset({ ...toFormValues(profile), profileImage: null });
+				reset({ ...toFormValues(profile), profileImage: undefined });
 			})
 			.catch((err: unknown) => {
 				setApiError(err instanceof Error ? err.message : "プロフィールの取得に失敗しました");
@@ -123,14 +124,15 @@ export function useUserProfile() {
 		return () => URL.revokeObjectURL(url);
 	}, [profileImage]);
 
-	const profileImageDisplayUrl = profileImagePreviewUrl ?? user?.profileImageUrl ?? null;
+	const profileImageDisplayUrl =
+		profileImage === null ? null : (profileImagePreviewUrl ?? user?.profileImageUrl ?? null);
 
 	const qualificationFieldArray = useFieldArray({ control, name: "qualifications" });
 	const workHistoryFieldArray = useFieldArray({ control, name: "workHistories" });
 
 	function enterEditMode() {
 		if (!user) return;
-		reset({ ...toFormValues(user), profileImage: null });
+		reset({ ...toFormValues(user), profileImage: undefined });
 		setApiError(null);
 		setMode("edit");
 	}
@@ -145,8 +147,12 @@ export function useUserProfile() {
 
 	function confirmCancel() {
 		setCancelDialogOpen(false);
-		if (user) reset({ ...toFormValues(user), profileImage: null });
+		if (user) reset({ ...toFormValues(user), profileImage: undefined });
 		setMode("view");
+	}
+
+	function removeProfileImage() {
+		setValue("profileImage", null);
 	}
 
 	async function onSubmit(data: UserProfileEditInput) {
@@ -154,28 +160,33 @@ export function useUserProfile() {
 		setApiError(null);
 		try {
 			const profileImageBase64 =
-				data.profileImage instanceof File ? await fileToBase64(data.profileImage) : null;
+				data.profileImage instanceof File
+					? await fileToBase64(data.profileImage)
+					: typeof data.profileImage === "string"
+						? undefined
+						: data.profileImage; // null → null (削除), undefined → undefined (変更なし)
 
 			await updateUserProfile(id, {
 				name: data.name,
 				birthDate: data.birthDate,
 				gender: data.gender,
 				profileImage: profileImageBase64,
-				phone: data.phone,
+				phone: data.phone || null,
 				email: data.email,
-				postalCode: data.postalCode,
-				prefecture: data.prefecture,
-				city: data.city,
-				streetAddress: data.streetAddress,
-				building: data.building,
+				postalCode: data.postalCode || null,
+				prefecture: data.prefecture || null,
+				city: data.city || null,
+				streetAddress: data.streetAddress || null,
+				building: data.building || null,
 				workTypes: data.workTypes,
 				qualifications: data.qualifications,
 				workHistories: data.workHistories,
-				selfPR: data.selfPR,
+				selfPR: data.selfPR || null,
 			});
-			navigate("/users/list", {
-				state: { snackbar: { severity: "success", message: "プロフィールを更新しました" } },
-			});
+			const detail = await getUserProfile(id);
+			const profile = toUserProfile(detail);
+			setUser(profile);
+			setMode("view");
 		} catch (err) {
 			setApiError(
 				err instanceof Error ? err.message : "更新に失敗しました。もう一度お試しください。",
@@ -198,6 +209,7 @@ export function useUserProfile() {
 		setCancelDialogOpen,
 		handleCancel,
 		confirmCancel,
+		removeProfileImage,
 		qualificationFieldArray,
 		workHistoryFieldArray,
 		navigate,

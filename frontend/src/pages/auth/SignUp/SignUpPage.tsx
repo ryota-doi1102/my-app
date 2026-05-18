@@ -4,7 +4,7 @@ import { PasswordInputField } from "@/components/shadcn/custom/input/password";
 import { Button } from "@/components/shadcn/original/button";
 import { useSignUp } from "./useSignUp";
 
-function SignUpPage() {
+export function SignUpPage() {
 	const { control, handleSubmit, error } = useSignUp();
 
 	return (
@@ -48,5 +48,3 @@ function SignUpPage() {
 		</div>
 	);
 }
-
-export default SignUpPage;

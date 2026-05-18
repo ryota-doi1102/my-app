@@ -4,7 +4,7 @@ import { PasswordInputField } from "@/components/shadcn/custom/input/password";
 import { Button } from "@/components/shadcn/original/button";
 import { useResetPassword } from "./useResetPassword";
 
-function ResetPasswordPage() {
+export function ResetPasswordPage() {
 	const { step, requestForm, resetForm, onRequestSubmit, onResetSubmit, backToRequest, error } =
 		useResetPassword();
 
@@ -81,5 +81,3 @@ function ResetPasswordPage() {
 		</div>
 	);
 }
-
-export default ResetPasswordPage;

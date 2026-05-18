@@ -3,7 +3,7 @@ import heroImg from "@/assets/hero.png";
 import reactLogo from "@/assets/react.svg";
 import viteLogo from "@/assets/vite.svg";
 
-function HomePage() {
+export function HomePage() {
 	const [count, setCount] = useState(0);
 
 	return (
@@ -97,5 +97,3 @@ function HomePage() {
 		</>
 	);
 }
-
-export default HomePage;

@@ -4,6 +4,7 @@ const STATIC_TITLES: Record<string, string> = {
 	"/": "ホーム",
 	"/users/list": "ユーザー一覧",
 	"/users/create": "ユーザー作成",
+	"/users/import": "ユーザーインポート",
 };
 
 function getPageTitle(pathname: string): string {

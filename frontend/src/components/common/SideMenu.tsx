@@ -1,10 +1,11 @@
-import { UserPlus, Users } from "lucide-react";
+import { Upload, UserPlus, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
 	{ label: "ユーザー一覧", to: "/users/list", icon: Users },
 	{ label: "ユーザー作成", to: "/users/create", icon: UserPlus },
+	{ label: "ユーザーインポート", to: "/users/import", icon: Upload },
 ] as const;
 
 export function SideMenu() {

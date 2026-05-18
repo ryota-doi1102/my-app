@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useJobs } from "@/contexts/JobsContext";
 import type { UserListItem } from "@/lib/api/users";
-import { deleteUser, searchUsers } from "@/lib/api/users";
+import {
+	deleteUsers,
+	downloadTemplate,
+	searchUsers,
+	submitExportJob,
+	submitImportJob,
+} from "@/lib/api/users";
 
 export type SortKey = "name" | "email" | "phone";
 export type SortOrder = "asc" | "desc";
@@ -40,7 +47,35 @@ const DEFAULT_LIST_STATE: ListState = {
 	perPage: 10,
 };
 
-const CSV_HEADERS = ["氏名", "メールアドレス", "電話番号", "希望勤務形態"];
+const IMPORT_TEMPLATE_HEADERS = [
+	"ID",
+	"氏名",
+	"メールアドレス",
+	"パスワード",
+	"電話番号",
+	"生年月日",
+	"性別",
+	"郵便番号",
+	"都道府県",
+	"市区町村",
+	"番地",
+	"建物名",
+	"希望勤務形態",
+	"資格",
+	"自己PR",
+	"職歴1_会社名",
+	"職歴1_開始月",
+	"職歴1_終了月",
+	"職歴1_役職",
+	"職歴2_会社名",
+	"職歴2_開始月",
+	"職歴2_終了月",
+	"職歴2_役職",
+	"職歴3_会社名",
+	"職歴3_開始月",
+	"職歴3_終了月",
+	"職歴3_役職",
+];
 
 function loadFromStorage(): ListState {
 	try {
@@ -64,8 +99,7 @@ function saveToStorage(state: ListState): void {
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function downloadCsv(content: string, filename: string): void {
-	const blob = new Blob([`﻿${content}`], { type: "text/csv;charset=utf-8;" });
+function downloadBlob(blob: Blob, filename: string): void {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;
@@ -89,6 +123,7 @@ export function useUserList() {
 	const [importErrors, setImportErrors] = useState<string[]>([]);
 	const [importErrorDialogOpen, setImportErrorDialogOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { addImportJob, addExportJob } = useJobs();
 
 	const { sortKey, sortOrder, page, perPage } = listState;
 
@@ -173,7 +208,7 @@ export function useUserList() {
 		setDeleteDialogOpen(false);
 		setIsLoading(true);
 		try {
-			await Promise.all(selectedIds.map((id) => deleteUser(id)));
+			await deleteUsers(selectedIds);
 			setSelectedIds([]);
 			await fetchUsers(listState);
 		} catch (err) {
@@ -191,25 +226,70 @@ export function useUserList() {
 		if (!file) return;
 		e.target.value = "";
 
+		if (file.size > 5 * 1024 * 1024) {
+			setImportErrors(["ファイルサイズが上限（5MB）を超えています"]);
+			setImportErrorDialogOpen(true);
+			return;
+		}
+
 		const text = await file.text();
-		const lines = text.trim().split(/\r?\n/);
+		const stripped = text.replace(/^﻿/, "");
+		const lines = stripped.trim().split(/\r?\n/);
 		if (lines.length < 2) return;
 
-		const headers = lines[0].split(",").map((h) => h.trim().replace(/^"(.*)"$/, "$1"));
-		const dataLines = lines.slice(1);
+		const [headerLine, ...rawDataLines] = lines;
+		if (!headerLine) return;
+
+		const dataLines = rawDataLines.filter((l) => l.trim().length > 0);
+		if (dataLines.length > 500) {
+			setImportErrors(["データ行数が上限（500 件）を超えています"]);
+			setImportErrorDialogOpen(true);
+			return;
+		}
+
+		const headers = headerLine.split(",").map((h) => h.trim().replace(/^"(.*)"$/, "$1"));
+		const expectedHeaders = IMPORT_TEMPLATE_HEADERS as readonly string[];
+		const headersMatch =
+			headers.length === expectedHeaders.length &&
+			expectedHeaders.every((h, i) => h === headers[i]);
+		if (!headersMatch) {
+			setImportErrors(["ヘッダーが仕様と一致しません"]);
+			setImportErrorDialogOpen(true);
+			return;
+		}
+
+		const idIdx = headers.indexOf("ID");
+		const nameIdx = headers.indexOf("氏名");
+		const emailIdx = headers.indexOf("メールアドレス");
 		const errors: string[] = [];
+		const seenIds = new Set<string>();
+		const seenEmails = new Set<string>();
 
 		for (let i = 0; i < dataLines.length; i++) {
-			const row = dataLines[i].split(",").map((v) => v.trim().replace(/^"(.*)"$/, "$1"));
+			const line = dataLines[i];
+			if (!line) continue;
+			const row = line.split(",").map((v) => v.trim().replace(/^"(.*)"$/, "$1"));
 			const rowNum = i + 2;
-			const nameIdx = headers.indexOf("氏名");
-			const emailIdx = headers.indexOf("メールアドレス");
 
-			if (nameIdx < 0 || !row[nameIdx]) {
-				errors.push(`${rowNum}行目: 氏名は必須です`);
+			const id = idIdx >= 0 ? row[idIdx] : undefined;
+			const name = nameIdx >= 0 ? row[nameIdx] : undefined;
+			const email = emailIdx >= 0 ? row[emailIdx] : undefined;
+
+			if (id) {
+				if (seenIds.has(id)) {
+					errors.push(`${rowNum}行目: ID "${id}" が重複しています`);
+				} else {
+					seenIds.add(id);
+				}
 			}
-			if (emailIdx < 0 || !row[emailIdx]) {
-				errors.push(`${rowNum}行目: メールアドレスは必須です`);
+
+			if (!name) errors.push(`${rowNum}行目: 氏名 は必須項目です`);
+			if (!email) {
+				errors.push(`${rowNum}行目: メールアドレス は必須項目です`);
+			} else if (seenEmails.has(email)) {
+				errors.push(`${rowNum}行目: メールアドレス ${email} が重複しています`);
+			} else {
+				seenEmails.add(email);
 			}
 		}
 
@@ -219,24 +299,66 @@ export function useUserList() {
 			return;
 		}
 
-		// TODO: API呼び出し - POST /api/v1/users/import
-		console.log("Import CSV:", dataLines.length, "件");
+		setIsLoading(true);
+		try {
+			const encoder = new TextEncoder();
+			const encoded = encoder.encode(text);
+
+			let body: ArrayBuffer;
+			let compressed = false;
+
+			if (typeof CompressionStream !== "undefined") {
+				const cs = new CompressionStream("gzip");
+				const writer = cs.writable.getWriter();
+				writer.write(encoded);
+				writer.close();
+				body = await new Response(cs.readable).arrayBuffer();
+				compressed = true;
+			} else {
+				body = encoded.buffer as ArrayBuffer;
+			}
+
+			const jobId = await submitImportJob(body, compressed);
+			addImportJob(jobId, () => void fetchUsers(listState));
+		} catch (err) {
+			setImportErrors([
+				err instanceof Error ? err.message : "インポートジョブの登録に失敗しました",
+			]);
+			setImportErrorDialogOpen(true);
+		} finally {
+			setIsLoading(false);
+		}
 	}
 
-	function handleTemplateDownload(): void {
-		const csv = `${CSV_HEADERS.map((h) => `"${h}"`).join(",")}\n`;
-		downloadCsv(csv, "users_template.csv");
+	async function handleTemplateDownload(): Promise<void> {
+		setIsLoading(true);
+		try {
+			const blob = await downloadTemplate();
+			downloadBlob(blob, "users_import_template.csv");
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "テンプレートのダウンロードに失敗しました");
+		} finally {
+			setIsLoading(false);
+		}
 	}
 
-	function handleExport(): void {
-		const rows = pagedUsers.map((u) => [
-			u.name ?? "",
-			u.email,
-			u.phone ?? "",
-			u.workTypes.join(";"),
-		]);
-		const csv = [CSV_HEADERS, ...rows].map((row) => row.map((v) => `"${v}"`).join(",")).join("\n");
-		downloadCsv(csv, "users.csv");
+	async function handleExport(): Promise<void> {
+		try {
+			const jobId = await submitExportJob({
+				name: listState.appliedParams.name || undefined,
+				email: listState.appliedParams.email || undefined,
+				phone: listState.appliedParams.phone || undefined,
+				workTypes:
+					listState.appliedParams.workTypes.length > 0
+						? listState.appliedParams.workTypes
+						: undefined,
+				sortKey: listState.sortKey ?? undefined,
+				sortOrder: listState.sortOrder,
+			});
+			addExportJob(jobId);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "エクスポートジョブの登録に失敗しました");
+		}
 	}
 
 	return {

@@ -2,10 +2,13 @@ import { clearTokens, getAccessToken } from "@/lib/auth";
 
 export class ApiError extends Error {
 	readonly status: number;
+	readonly messages: string[];
 
-	constructor(status: number, message: string) {
-		super(message);
+	constructor(status: number, messages: string | string[]) {
+		const msgs = Array.isArray(messages) ? messages : [messages];
+		super(msgs[0] ?? "エラーが発生しました");
 		this.status = status;
+		this.messages = msgs;
 	}
 }
 
@@ -35,7 +38,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 			return undefined as T;
 		}
 		const body = (await response.json()) as ErrorBody;
-		throw new ApiError(response.status, body.error?.messages?.[0] ?? "エラーが発生しました");
+		throw new ApiError(response.status, body.error?.messages ?? ["エラーが発生しました"]);
 	}
 
 	return response.json() as Promise<T>;

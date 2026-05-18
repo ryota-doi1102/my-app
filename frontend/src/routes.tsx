@@ -1,12 +1,13 @@
 import type { RouteObject } from "react-router-dom";
 import { AppLayout } from "@/components/common/AppLayout";
 import { RequireAuth } from "@/components/common/RequireAuth";
-import ResetPasswordPage from "@/pages/auth/ResetPassword/ResetPasswordPage";
-import SignInPage from "@/pages/auth/SignIn/SignInPage";
-import SignUpPage from "@/pages/auth/SignUp/SignUpPage";
-import HomePage from "@/pages/home/HomePage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPassword/ResetPasswordPage";
+import { SignInPage } from "@/pages/auth/SignIn/SignInPage";
+import { SignUpPage } from "@/pages/auth/SignUp/SignUpPage";
+import { HomePage } from "@/pages/home/HomePage";
 import { UserCreatePage } from "@/pages/users/create";
 import { UserProfilePage } from "@/pages/users/detail";
+import { UserImportPage } from "@/pages/users/import";
 import { UserListPage } from "@/pages/users/list";
 
 export const routes: RouteObject[] = [
@@ -41,6 +42,10 @@ export const routes: RouteObject[] = [
 					{
 						path: "/users/create",
 						element: <UserCreatePage />,
+					},
+					{
+						path: "/users/import",
+						element: <UserImportPage />,
 					},
 					{
 						path: "/users/:id",
