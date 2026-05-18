@@ -10,10 +10,8 @@ import {
 import { getAppLogger } from "../../lib/logger.js";
 import { AppError } from "../../middleware/error.js";
 import type { UserProfileEditBackendInput } from "../../schemas/user.js";
-import type { UserProfileDetail } from "./common.js";
 import {
 	deleteProfileImageFile,
-	getUserProfileById,
 	saveProfileImage,
 } from "./common.js";
 
@@ -22,7 +20,7 @@ const logger = getAppLogger(["services", "users", "API-USER-04"]);
 export async function updateUserProfile(
 	userId: string,
 	data: UserProfileEditBackendInput,
-): Promise<UserProfileDetail> {
+): Promise<void> {
 	const {
 		name,
 		birthDate,
@@ -97,13 +95,13 @@ export async function updateUserProfile(
 				birthDate: birthDate ?? null,
 				gender,
 				profileImageUrl: imageUrlToSave,
-				phone: phone ?? null,
-				postalCode: postalCode ?? null,
-				prefecture: prefecture ?? null,
-				city: city ?? null,
-				streetAddress: streetAddress ?? null,
-				building: building ?? null,
-				selfPr: selfPR ?? null,
+				phone: phone || null,
+				postalCode: postalCode || null,
+				prefecture: prefecture || null,
+				city: city || null,
+				streetAddress: streetAddress || null,
+				building: building || null,
+				selfPr: selfPR || null,
 				updatedAt: new Date(),
 			})
 			.where(eq(userProfiles.userId, userId));
@@ -151,16 +149,5 @@ export async function updateUserProfile(
 		await deleteProfileImageFile(oldImageUrl);
 	}
 
-	const profile = await getUserProfileById(userId);
-	if (!profile) {
-		logger.error("プロフィール更新後の取得に失敗", { userId });
-		throw new AppError(
-			500,
-			"INTERNAL_SERVER_ERROR",
-			"予期せぬエラーが発生しました",
-		);
-	}
-
 	logger.info("ユーザープロフィール更新成功", { userId });
-	return profile;
 }

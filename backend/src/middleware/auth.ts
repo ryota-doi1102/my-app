@@ -22,6 +22,12 @@ export function requireAuth() {
       throw new AppError(500, "INTERNAL_SERVER_ERROR", "JWT_SECRET is not set");
     }
 
+    // Authorization ヘッダーが存在しない場合は認証未実施として扱う
+    const authorization = c.req.header("Authorization");
+    if (!authorization) {
+      throw new AppError(401, "UNAUTHORIZED", "認証が必要です");
+    }
+
     const middleware = jwt({ secret, alg: "HS256" });
 
     try {

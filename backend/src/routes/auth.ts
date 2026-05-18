@@ -12,7 +12,7 @@ import { authService } from "../services/authService/index.js";
 const errorResponseSchema = z.object({
 	status_code: z.number(),
 	is_success: z.literal(false),
-	error: z.object({ code: z.string(), message: z.string() }),
+	error: z.object({ code: z.string(), messages: z.array(z.string()) }),
 });
 
 const authRoute = new OpenAPIHono({
@@ -31,6 +31,33 @@ const authRoute = new OpenAPIHono({
 			);
 		}
 	},
+});
+
+// POST リクエストのボディ形式チェック（Content-Type・空ボディ・JSON パースエラーを 400 で返す）
+authRoute.use("*", async (c, next) => {
+	if (c.req.method === "POST") {
+		const contentType = c.req.header("content-type");
+		const badRequest = c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["リクエストの形式が正しくありません"],
+				},
+			},
+			400,
+		);
+		if (!contentType?.includes("application/json")) return badRequest;
+		try {
+			const text = await c.req.raw.clone().text();
+			if (!text.trim()) return badRequest;
+			JSON.parse(text);
+		} catch {
+			return badRequest;
+		}
+	}
+	return next();
 });
 
 /** POST /api/v1/auth/signup/request — サインアップトークン発行 */

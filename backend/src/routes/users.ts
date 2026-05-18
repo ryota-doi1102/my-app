@@ -1,6 +1,12 @@
+import { promisify } from "node:util";
+import { gunzip } from "node:zlib";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { getAppLogger } from "../lib/logger.js";
 import { requireAuth } from "../middleware/auth.js";
+import { IMPORT_TEMPLATE_HEADERS } from "../services/userService/API-USER-IMPORT.js";
+
+const gunzipAsync = promisify(gunzip);
+
 import {
 	userProfileCreateBackendSchema,
 	userProfileEditBackendSchema,
@@ -11,7 +17,7 @@ const logger = getAppLogger(["routes", "users"]);
 
 const errorResponseSchema = z.object({
 	status_code: z.number(),
-	is_is_success: z.literal(false),
+	is_success: z.literal(false),
 	error: z.object({ code: z.string(), messages: z.array(z.string()) }),
 });
 
@@ -64,28 +70,24 @@ const usersRoute = new OpenAPIHono({
 // JWT 認証: /:id ルート（GET/PUT/DELETE）と POST /（検索）に適用
 // PUT /（ユーザー作成）は未認証ユーザーが呼ぶため認証不要
 usersRoute.use("/:id", requireAuth());
-usersRoute.use("/", async (c, next) => {
+// ジョブ取得ルート（2セグメントのため /:id ミドルウェアが効かないため明示的に設定）
+usersRoute.use("/import-jobs/*", requireAuth());
+usersRoute.use("/export-jobs/*", requireAuth());
+usersRoute.use("/:id", async (c, next) => {
 	if (c.req.method === "PUT") {
 		const contentType = c.req.header("content-type");
-		if (!contentType?.includes("application/json")) {
-			return c.json(
-				{
-					status_code: 400,
-					is_success: false as const,
-					error: { code: "BAD_REQUEST", messages: ["リクエストの形式が正しくありません"] },
-				},
-				400,
-			);
-		}
-		// クローンでボディを先読みし、空ボディ・JSON パースエラーを 400 として返す
 		const badRequest = c.json(
 			{
 				status_code: 400,
 				is_success: false as const,
-				error: { code: "BAD_REQUEST", messages: ["リクエストの形式が正しくありません"] },
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["リクエストの形式が正しくありません"],
+				},
 			},
 			400,
 		);
+		if (!contentType?.includes("application/json")) return badRequest;
 		try {
 			const text = await c.req.raw.clone().text();
 			if (!text.trim()) return badRequest;
@@ -93,7 +95,32 @@ usersRoute.use("/", async (c, next) => {
 		} catch {
 			return badRequest;
 		}
-		return next();
+	}
+	return next();
+});
+usersRoute.use("/", async (c, next) => {
+	if (c.req.method === "PUT" || c.req.method === "POST") {
+		const contentType = c.req.header("content-type");
+		const badRequest = c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["リクエストの形式が正しくありません"],
+				},
+			},
+			400,
+		);
+		if (!contentType?.includes("application/json")) return badRequest;
+		try {
+			const text = await c.req.raw.clone().text();
+			if (!text.trim()) return badRequest;
+			JSON.parse(text);
+		} catch {
+			return badRequest;
+		}
+		if (c.req.method === "PUT") return next();
 	}
 	return requireAuth()(c, next);
 });
@@ -272,6 +299,315 @@ usersRoute.openapi(createUserProfileRoute, async (c) => {
 	return c.body(null, 204);
 });
 
+/** API-USER-07: GET /api/v1/users/template — インポート用CSVテンプレートダウンロード */
+usersRoute.get("/template", async (_c) => {
+	const header = IMPORT_TEMPLATE_HEADERS.map((h) => `"${h}"`).join(",");
+	const csv = `﻿${header}\n`;
+
+	return new Response(csv, {
+		headers: {
+			"Content-Type": "text/csv; charset=utf-8",
+			"Content-Disposition": 'attachment; filename="users_import_template.csv"',
+		},
+	});
+});
+
+/** API-USER-08: POST /api/v1/users/import — CSVインポートジョブ登録 */
+usersRoute.post("/import", async (c) => {
+	const raw = await c.req.arrayBuffer();
+	const encoding = c.req.header("content-encoding");
+	const rawBuf = Buffer.from(raw);
+
+	// 解凍前拡張子チェック（マジックバイトで実際のファイル形式を確認）
+	const isGzipMagic =
+		rawBuf.length >= 2 &&
+		rawBuf.readUInt8(0) === 0x1f &&
+		rawBuf.readUInt8(1) === 0x8b;
+	if (encoding === "gzip" && !isGzipMagic) {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: [
+						"ファイル形式が正しくありません（gzipファイルではありません）",
+					],
+				},
+			},
+			400,
+		);
+	}
+	if (encoding !== "gzip" && isGzipMagic) {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: [
+						"ファイル形式が正しくありません（CSVファイルを指定してください）",
+					],
+				},
+			},
+			400,
+		);
+	}
+
+	// 解凍
+	let csvBuf: Buffer;
+	try {
+		csvBuf = encoding === "gzip" ? await gunzipAsync(rawBuf) : rawBuf;
+	} catch {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["ファイルの解凍に失敗しました"],
+				},
+			},
+			400,
+		);
+	}
+
+	// 解凍後拡張子チェック（ヌルバイト検出によるバイナリファイル混入防止）
+	if (csvBuf.indexOf(0x00) !== -1) {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: [
+						"ファイル形式が正しくありません（CSVファイルを指定してください）",
+					],
+				},
+			},
+			400,
+		);
+	}
+
+	// 空ファイルチェック
+	if (csvBuf.length === 0) {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: { code: "BAD_REQUEST", messages: ["ファイルが空です"] },
+			},
+			400,
+		);
+	}
+
+	const csvText = csvBuf.toString("utf-8");
+	const jobId = await userService.submitImportJob(csvText);
+	return c.json(
+		{ status_code: 200, is_success: true as const, data: { jobId } },
+		200,
+	);
+});
+
+/** API-USER-10: POST /api/v1/users/export — CSVエクスポートジョブ登録 */
+usersRoute.post("/export", async (c) => {
+	let body: {
+		name?: string;
+		email?: string;
+		phone?: string;
+		workTypes?: string[];
+		sortKey?: "name" | "email" | "phone" | null;
+		sortOrder?: "asc" | "desc";
+	} = {};
+	try {
+		const text = await c.req.raw.clone().text();
+		if (text.trim()) body = JSON.parse(text) as typeof body;
+	} catch {
+		return c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["リクエストの形式が正しくありません"],
+				},
+			},
+			400,
+		);
+	}
+
+	const jobId = await userService.submitExportJob({
+		name: body.name || undefined,
+		email: body.email || undefined,
+		phone: body.phone || undefined,
+		workTypeNames:
+			body.workTypes && body.workTypes.length > 0 ? body.workTypes : undefined,
+		sortKey: body.sortKey ?? null,
+		sortOrder: body.sortOrder ?? "asc",
+	});
+	return c.json(
+		{ status_code: 200, is_success: true as const, data: { jobId } },
+		200,
+	);
+});
+
+/** DELETE /api/v1/users/bulk のボディ形式チェック */
+usersRoute.use("/bulk", async (c, next) => {
+	if (c.req.method === "DELETE") {
+		const contentType = c.req.header("content-type");
+		const badRequest = c.json(
+			{
+				status_code: 400,
+				is_success: false as const,
+				error: {
+					code: "BAD_REQUEST",
+					messages: ["リクエストの形式が正しくありません"],
+				},
+			},
+			400,
+		);
+		if (!contentType?.includes("application/json")) return badRequest;
+		try {
+			const text = await c.req.raw.clone().text();
+			if (!text.trim()) return badRequest;
+			JSON.parse(text);
+		} catch {
+			return badRequest;
+		}
+	}
+	return next();
+});
+
+/** API-USER-06: DELETE /api/v1/users/bulk — ユーザープロフィール一括削除 */
+const bulkDeleteUsersRoute = createRoute({
+	method: "delete",
+	path: "/bulk",
+	tags: ["Users"],
+	summary: "ユーザープロフィール一括削除",
+	security: [{ bearerAuth: [] }],
+	request: {
+		body: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						ids: z
+							.array(z.string().uuid({ message: "IDの形式が正しくありません" }))
+							.min(1, "IDは1件以上指定してください")
+							.max(100, "IDは100件以内で指定してください")
+							.default([]),
+					}),
+				},
+			},
+			required: true,
+		},
+	},
+	responses: {
+		204: { description: "一括削除成功" },
+		401: {
+			content: { "application/json": { schema: errorResponseSchema } },
+			description: "認証エラー",
+		},
+		422: {
+			content: { "application/json": { schema: errorResponseSchema } },
+			description: "バリデーションエラー",
+		},
+	},
+});
+
+usersRoute.openapi(bulkDeleteUsersRoute, async (c) => {
+	const { ids } = c.req.valid("json");
+
+	logger.info("ユーザー一括削除リクエスト", { count: ids.length });
+
+	await userService.deleteUsers(ids);
+
+	return c.body(null, 204);
+});
+
+/** API-USER-09: GET /api/v1/users/import-jobs/:jobId — インポートジョブ結果取得 */
+usersRoute.get("/import-jobs/:jobId", async (c) => {
+	const jobId = c.req.param("jobId");
+	const result = await userService.getImportJob(jobId);
+
+	if (result.status === "pending" || result.status === "processing") {
+		return c.json(
+			{
+				status_code: 202,
+				is_success: true as const,
+				data: { id: result.id, status: result.status },
+			},
+			202,
+		);
+	}
+
+	if (result.status === "failed") {
+		const errors = result.errors ?? ["エラーが発生しました"];
+		const isSystemError =
+			errors.length === 1 && errors[0] === "インポートに失敗しました";
+		const statusCode = isSystemError ? 500 : 422;
+		const code = isSystemError
+			? "INTERNAL_SERVER_ERROR"
+			: "UNPROCESSABLE_ENTITY";
+		return c.json(
+			{
+				status_code: statusCode,
+				is_success: false as const,
+				error: { code, messages: errors },
+			},
+			statusCode as 422 | 500,
+		);
+	}
+
+	// completed
+	return c.json(
+		{
+			status_code: 200,
+			is_success: true as const,
+			data: { id: result.id, status: result.status, result: result.result },
+		},
+		200,
+	);
+});
+
+/** API-USER-11: GET /api/v1/users/export-jobs/:jobId — エクスポートジョブ結果取得 */
+usersRoute.get("/export-jobs/:jobId", async (c) => {
+	const jobId = c.req.param("jobId");
+	const result = await userService.getExportJob(jobId);
+
+	if (result.status === "pending" || result.status === "processing") {
+		return c.json(
+			{
+				status_code: 202,
+				is_success: true as const,
+				data: { id: result.id, status: result.status },
+			},
+			202,
+		);
+	}
+
+	if (result.status === "failed") {
+		return c.json(
+			{
+				status_code: 500,
+				is_success: false as const,
+				error: {
+					code: "INTERNAL_SERVER_ERROR",
+					messages: ["エクスポートに失敗しました"],
+				},
+			},
+			500,
+		);
+	}
+
+	// completed: CSV を直接返却
+	return new Response(result.csvContent ?? "", {
+		headers: {
+			"Content-Type": "text/csv; charset=utf-8",
+			"Content-Disposition": 'attachment; filename="users_export.csv"',
+		},
+	});
+});
+
 /** API-USER-03: GET /api/v1/users/:id — ユーザープロフィール取得 */
 const getUserProfileRoute = createRoute({
 	method: "get",
@@ -327,7 +663,7 @@ const updateUserProfileRoute = createRoute({
 	summary: "ユーザープロフィール更新",
 	security: [{ bearerAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().uuid() }),
+		params: z.object({ id: z.string() }),
 		body: {
 			content: {
 				"application/json": {

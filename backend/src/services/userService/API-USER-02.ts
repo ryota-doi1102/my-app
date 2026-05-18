@@ -11,14 +11,13 @@ import {
 import { getAppLogger } from "../../lib/logger.js";
 import { AppError } from "../../middleware/error.js";
 import type { UserProfileCreateBackendInput } from "../../schemas/user.js";
-import type { UserProfileDetail } from "./common.js";
-import { getUserProfileById, saveProfileImage } from "./common.js";
+import { saveProfileImage } from "./common.js";
 
 const logger = getAppLogger(["services", "users", "API-USER-02"]);
 
 export async function createUserProfile(
 	data: UserProfileCreateBackendInput,
-): Promise<UserProfileDetail> {
+): Promise<void> {
 	const {
 		name,
 		birthDate,
@@ -53,7 +52,7 @@ export async function createUserProfile(
 
 	let profileImageUrl: string | null = null;
 
-	const newUserId = await db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		const [newUser] = await tx
 			.insert(users)
 			.values({ email, passwordHash })
@@ -77,13 +76,13 @@ export async function createUserProfile(
 			birthDate: birthDate ?? null,
 			gender,
 			profileImageUrl,
-			phone: phone ?? null,
-			postalCode: postalCode ?? null,
-			prefecture: prefecture ?? null,
-			city: city ?? null,
-			streetAddress: streetAddress ?? null,
-			building: building ?? null,
-			selfPr: selfPR ?? null,
+			phone: phone || null,
+			postalCode: postalCode || null,
+			prefecture: prefecture || null,
+			city: city || null,
+			streetAddress: streetAddress || null,
+			building: building || null,
+			selfPr: selfPR || null,
 		});
 
 		if (workTypeNames && workTypeNames.length > 0) {
@@ -116,20 +115,7 @@ export async function createUserProfile(
 				sortOrder: i,
 			})),
 		);
-
-		return newUser.id;
 	});
 
-	const profile = await getUserProfileById(newUserId);
-	if (!profile) {
-		logger.error("プロフィール作成後の取得に失敗", { userId: newUserId });
-		throw new AppError(
-			500,
-			"INTERNAL_SERVER_ERROR",
-			"予期せぬエラーが発生しました",
-		);
-	}
-
-	logger.info("ユーザープロフィール作成成功", { userId: newUserId, email });
-	return profile;
+	logger.info("ユーザープロフィール作成成功", { email });
 }

@@ -1,9 +1,25 @@
 import { z } from 'zod'
+import {
+	allowedCharsMessage,
+	digitsMessage,
+	forbiddenCharsMessage,
+	formatMessage,
+	invalidTypeMessage,
+	maxMessage,
+	minMessage,
+	requiredMessage,
+} from '../constants/index.js'
 
 export const createUserSchema = z.object({
-	name: z.string().min(1, '名前は必須です'),
-	email: z.string().email('有効なメールアドレスを入力してください'),
-	password: z.string().min(8, '8文字以上で入力してください'),
+	name: z
+		.string({ required_error: requiredMessage('名前'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('名前')),
+	email: z
+		.string({ required_error: requiredMessage('メールアドレス'), invalid_type_error: invalidTypeMessage('文字列') })
+		.email(formatMessage('メールアドレス', 'メールアドレス')),
+	password: z
+		.string({ required_error: requiredMessage('パスワード'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(8, minMessage('パスワード', '8文字')),
 })
 
 export type CreateUserInput = z.infer<typeof createUserSchema>
@@ -26,29 +42,45 @@ export function calcAge(birthDate: string): number {
 }
 
 export const workHistoryItemSchema = z.object({
-	company: z.string({ required_error: '会社名は必須項目です' }).min(1, '会社名は必須項目です'),
-	startMonth: z.string({ required_error: '在籍開始月は必須項目です' }).min(1, '在籍開始月は必須項目です'),
-	endMonth: z.string().nullable().optional(),
-	role: z.string({ required_error: '役職は必須項目です' }).min(1, '役職は必須項目です'),
+	company: z
+		.string({ required_error: requiredMessage('会社名'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('会社名'))
+		.max(255, maxMessage('会社名', '255文字')),
+	startMonth: z
+		.string({ required_error: requiredMessage('在籍開始月'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('在籍開始月'))
+		.regex(/^\d{4}-\d{2}$/, formatMessage('在籍開始月', 'YYYY-MM')),
+	endMonth: z
+		.string({ invalid_type_error: invalidTypeMessage('文字列') })
+		.regex(/^(\d{4}-\d{2})?$/, formatMessage('在籍終了月', 'YYYY-MM'))
+		.nullable()
+		.optional(),
+	role: z
+		.string({ required_error: requiredMessage('役職'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('役職'))
+		.max(255, maxMessage('役職', '255文字')),
 })
 
 export type WorkHistoryItem = z.infer<typeof workHistoryItemSchema>
 
 export const qualificationItemSchema = z.object({
-	value: z.string().min(1, '資格名は必須項目です'),
+	value: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).min(1, requiredMessage('資格名')),
 })
 
 export const userProfileCreateSchema = z.object({
-	name: z.string({ required_error: '氏名は必須項目です' }).min(1, '氏名は必須項目です'),
+	name: z
+		.string({ invalid_type_error: invalidTypeMessage('文字列'), required_error: requiredMessage('氏名') })
+		.min(1, requiredMessage('氏名'))
+		.max(100, maxMessage('氏名', '100文字')),
 	birthDate: z
-		.string({ required_error: '生年月日は必須項目です' })
-		.min(1, '生年月日は必須項目です')
-		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), '生年月日はYYYY-MM-DD形式で入力してください')
+		.string({ invalid_type_error: invalidTypeMessage('文字列'), required_error: requiredMessage('生年月日') })
+		.min(1, requiredMessage('生年月日'))
+		.regex(/^\d{4}-\d{2}-\d{2}$/, formatMessage('生年月日', 'YYYY-MM-DD'))
 		.refine((val) => calcAge(val) >= 18, '18歳未満の方は登録できません')
 		.refine((val) => calcAge(val) < 60, '60歳以上の方は登録できません'),
 	gender: z.enum(['男性', '女性', 'その他'], {
 		errorMap: (issue) => ({
-			message: issue.code === 'invalid_enum_value' ? '性別の形式が正しくありません' : '性別は必須項目です',
+			message: issue.code === 'invalid_enum_value' ? '性別の形式が正しくありません' : requiredMessage('性別'),
 		}),
 	}),
 	profileImage: z
@@ -58,43 +90,48 @@ export const userProfileCreateSchema = z.object({
 			'対応していないファイル形式です',
 		)
 		.refine(
+			(val) => !val || typeof val === 'string' || (val as { size: number }).size > 0,
+			'ファイルが空です',
+		)
+		.refine(
 			(val) => !val || typeof val === 'string' || (val as { size: number }).size <= 5 * 1024 * 1024,
 			'ファイルサイズが上限を超えています',
 		)
 		.nullable()
 		.optional(),
 	phone: z
-		.string()
-		.optional()
-		.refine(
-			(val) => !val || /^\d{10,11}$/.test(val),
-			'電話番号の形式が正しくありません',
-		),
+		.string({ invalid_type_error: invalidTypeMessage('文字列') })
+		.regex(/^[^-]*$/, forbiddenCharsMessage('電話番号', 'ハイフン', '09012345678'))
+		.regex(/^[0-9]*$/, allowedCharsMessage('電話番号', '半角数字'))
+		.regex(/^(\d{10,11})?$/, digitsMessage('電話番号', '10〜11'))
+		.optional(),
 	email: z
-		.string({ required_error: 'メールアドレスは必須項目です' })
-		.min(1, 'メールアドレスは必須項目です')
-		.email('メールアドレスはメールアドレス形式で入力してください'),
+		.string({ required_error: requiredMessage('メールアドレス'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('メールアドレス'))
+		.email(formatMessage('メールアドレス', 'メールアドレス')),
 	password: z
-		.string({ required_error: 'パスワードは必須項目です' })
-		.min(1, 'パスワードは必須項目です')
-		.min(8, 'パスワードは8文字以上で入力してください'),
+		.string({ required_error: requiredMessage('パスワード'), invalid_type_error: invalidTypeMessage('文字列') })
+		.min(1, requiredMessage('パスワード'))
+		.min(8, minMessage('パスワード', '8文字'))
+		.regex(/[A-Z]/, 'パスワードには大文字の英字を1文字以上含めてください')
+		.regex(/[a-z]/, 'パスワードには小文字の英字を1文字以上含めてください')
+		.regex(/[0-9]/, 'パスワードには数字を1文字以上含めてください'),
 	postalCode: z
-		.string()
-		.optional()
-		.refine(
-			(val) => !val || /^\d{7}$/.test(val),
-			'郵便番号の形式が正しくありません',
-		),
-	prefecture: z.string().optional(),
-	city: z.string().optional(),
-	streetAddress: z.string().optional(),
-	building: z.string().optional(),
+		.string({ invalid_type_error: invalidTypeMessage('文字列') })
+		.regex(/^[^-]*$/, forbiddenCharsMessage('郵便番号', 'ハイフン', '1234567'))
+		.regex(/^[0-9]*$/, allowedCharsMessage('郵便番号', '半角数字'))
+		.regex(/^(\d{7})?$/, digitsMessage('郵便番号', 7))
+		.optional(),
+	prefecture: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).max(50, maxMessage('都道府県', '50文字')).optional(),
+	city: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).max(100, maxMessage('市区町村', '100文字')).optional(),
+	streetAddress: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).max(255, maxMessage('番地', '255文字')).optional(),
+	building: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).max(255, maxMessage('建物名・部屋番号', '255文字')).optional(),
 	workTypes: z.array(z.enum(WORK_TYPES)).optional(),
 	qualifications: z.array(qualificationItemSchema).optional(),
 	workHistories: z
 		.array(workHistoryItemSchema, { required_error: '職歴を1件以上入力してください' })
 		.min(1, '職歴を1件以上入力してください'),
-	selfPR: z.string().optional(),
+	selfPR: z.string({ invalid_type_error: invalidTypeMessage('文字列') }).optional(),
 	agreedToTerms: z
 		.boolean({
 			required_error: '利用規約・プライバシーポリシーへの同意が必要です',
@@ -130,9 +167,49 @@ export type UserProfile = {
 	updatedAt?: string
 }
 
-export const userProfileEditSchema = userProfileCreateSchema.omit({
-	password: true,
-	agreedToTerms: true,
-})
+export const userProfileEditSchema = userProfileCreateSchema
+	.omit({ password: true, agreedToTerms: true })
+	.extend({
+		phone: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.regex(/^[^-]*$/, forbiddenCharsMessage('電話番号', 'ハイフン', '09012345678'))
+			.regex(/^[0-9]*$/, allowedCharsMessage('電話番号', '半角数字'))
+			.regex(/^(\d{10,11})?$/, digitsMessage('電話番号', '10〜11'))
+			.nullable()
+			.optional(),
+		postalCode: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.regex(/^[^-]*$/, forbiddenCharsMessage('郵便番号', 'ハイフン', '1234567'))
+			.regex(/^[0-9]*$/, allowedCharsMessage('郵便番号', '半角数字'))
+			.regex(/^(\d{7})?$/, digitsMessage('郵便番号', 7))
+			.nullable()
+			.optional(),
+		prefecture: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.max(50, maxMessage('都道府県', '50文字'))
+			.nullable()
+			.optional(),
+		city: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.max(100, maxMessage('市区町村', '100文字'))
+			.nullable()
+			.optional(),
+		streetAddress: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.max(255, maxMessage('番地', '255文字'))
+			.nullable()
+			.optional(),
+		building: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.max(255, maxMessage('建物名・部屋番号', '255文字'))
+			.nullable()
+			.optional(),
+		selfPR: z
+			.string({ invalid_type_error: invalidTypeMessage('文字列') })
+			.nullable()
+			.optional(),
+		workTypes: z.array(z.enum(WORK_TYPES)).nullable().optional(),
+		qualifications: z.array(qualificationItemSchema).nullable().optional(),
+	})
 
 export type UserProfileEditInput = z.infer<typeof userProfileEditSchema>
