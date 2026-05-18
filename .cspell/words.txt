@@ -6,3 +6,4 @@
 #   - システム固有の技術用語は cspell.json の words に追加すること
 #   - このファイルはデータ起因の固有名詞専用
 TOEIC
+Passworddd
