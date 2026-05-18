@@ -52,16 +52,16 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. トークンレコードを取得する
-3. トークンの有効性を確認する（存在しない・失効済み・使用済み・期限切れ）
-4. トークンのメールアドレスからユーザーを取得する（退会済み除く）
-5. 新しいパスワードをハッシュ化する（bcrypt, cost=12）
-6. トランザクション実行:
-   - users テーブルの password_hash を更新する
-   - password_reset_tokens の used_at を更新する
-   - refresh_tokens の revoked_at を更新してセッションを全失効させる
-7. 成功レスポンスを返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-07-F01 | パスワードリセット処理開始 | - | - | - | `[API-AUTH-07-F01] パスワードリセット処理開始` |
+| API-AUTH-07-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-07-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-07-F03 | `passwordResetSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-07-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-07-F04 | `password_reset_tokens` テーブルからトークンを取得し、有効性（存在・未失効・未使用・有効期限内）を確認する | 401 | `UNAUTHORIZED` | `トークンが無効または期限切れです` | `[API-AUTH-07-F04] トークン検証失敗: ${reason}` |
+| API-AUTH-07-F05 | トークンのメールアドレスから `users` テーブルのユーザーを取得する（退会済み除く） | 404 | `NOT_FOUND` | `ユーザーが見つかりません` | `[API-AUTH-07-F05] ユーザーが見つかりません: email=${email}` |
+| API-AUTH-07-F06 | 新しいパスワードを bcrypt でハッシュ化する | - | - | - | - |
+| API-AUTH-07-F07 | トランザクション内で `users` のパスワードハッシュ更新・`password_reset_tokens` の `used_at` 更新・`refresh_tokens` の全失効を実行する | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-07-F07] DB書き込み失敗: ${error.message}` |
+| API-AUTH-07-F08 | 200 を返す | 200 | - | - | `[API-AUTH-07-F08] パスワードリセット完了: email=${email}` |
 
 ## 使用するスキーマ
 

@@ -57,14 +57,14 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. refresh_tokens テーブルからトークンを検索する
-3. 以下の場合は 401 UNAUTHORIZED を返す（理由は統一する）
-   - 存在しない
-   - revoked_at が存在する（無効化済み）
-   - expires_at が現在時刻より過去（期限切れ）
-4. refreshToken の revoked_at を現在時刻で更新する（無効化）
-5. 成功レスポンスを返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-05-F01 | サインアウト処理開始 | - | - | - | `[API-AUTH-05-F01] サインアウト処理開始` |
+| API-AUTH-05-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-05-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-05-F03 | バリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-05-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-05-F04 | `refresh_tokens` テーブルからトークンを検索し、有効性（存在・未失効・有効期限内）を確認する | 401 | `UNAUTHORIZED` | `トークンが無効です` | `[API-AUTH-05-F04] リフレッシュトークン検証失敗: ${reason}` |
+| API-AUTH-05-F05 | refreshToken の `revoked_at` を現在時刻で更新して無効化する | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-05-F05] DB書き込み失敗: ${error.message}` |
+| API-AUTH-05-F06 | 200 を返す | 200 | - | - | `[API-AUTH-05-F06] サインアウト完了` |
 
 ## 備考
 - accessToken はサーバー側で無効化できないため、フロントエンド側で破棄する

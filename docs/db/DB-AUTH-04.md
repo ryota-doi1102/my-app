@@ -1,7 +1,7 @@
-# signup_tokens
+# password_reset_tokens
 
 ## テーブルID
-DB-AUTH-02
+DB-AUTH-04
 
 ## テーブル定義
 
@@ -9,14 +9,11 @@ DB-AUTH-02
 |---|---|---|---|---|---|
 | id | uuid | ✓ | ✓ | auto | PK |
 | email | varchar(255) | ✓ | - | - | トークン発行対象のメールアドレス |
-| token | varchar(255) | ✓ | ✓ | - | サインアップ用トークン（UUID v4） |
+| token | varchar(255) | ✓ | ✓ | - | パスワードリセット用トークン（UUID v4） |
 | expires_at | timestamp | ✓ | - | - | 有効期限（発行時刻 + 24時間） |
 | created_at | timestamp | ✓ | - | now() | 発行日時 |
 | used_at | timestamp | - | - | - | 使用日時 |
 | revoked_at | timestamp | - | - | - | 無効化日時 |
-
-<!-- 型の選択肢 -->
-<!-- uuid / varchar(N) / text / integer / boolean / date / timestamp / decimal(M,N) -->
 
 ## インデックス
 
@@ -29,4 +26,4 @@ DB-AUTH-02
 - `token` は `crypto.randomUUID()` で生成した UUID v4 形式
 - `expires_at` カラムでトークンの有効期限を管理する（発行時刻 + 24時間）
 - `used_at` が NULL でない場合は使用済みトークン
-- `revoked_at` が NULL でない場合は無効化済みトークン
+- `revoked_at` が NULL でない場合は無効化済みトークン（同一メールアドレスで再リクエスト時に古いトークンを無効化する）

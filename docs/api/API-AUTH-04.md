@@ -55,17 +55,14 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. refresh_tokens テーブルからトークンを検索する
-3. 以下の場合は 401 UNAUTHORIZED を返す（理由は統一する）
-   - 存在しない
-   - revoked_at が存在する（無効化済み）
-   - expires_at が現在時刻より過去（期限切れ）
-4. 古い refreshToken の revoked_at を現在時刻で更新する（無効化）
-5. 新しい accessToken を発行する
-6. 新しい refreshToken を発行する（有効期限：現在時刻 + 1日）
-7. refresh_tokens テーブルに新しい refreshToken を保存する
-8. accessToken と refreshToken を返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-04-F01 | トークンリフレッシュ処理開始 | - | - | - | `[API-AUTH-04-F01] トークンリフレッシュ処理開始` |
+| API-AUTH-04-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-04-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-04-F03 | バリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-04-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-04-F04 | `refresh_tokens` テーブルからトークンを検索し、有効性（存在・未失効・有効期限内）を確認する | 401 | `UNAUTHORIZED` | `リフレッシュトークンが無効または期限切れです` | `[API-AUTH-04-F04] リフレッシュトークン検証失敗: ${reason}` |
+| API-AUTH-04-F05 | 古い refreshToken の `revoked_at` を更新して無効化し、新しい accessToken と refreshToken を発行して `refresh_tokens` テーブルに保存する | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-04-F05] DB書き込み失敗: ${error.message}` |
+| API-AUTH-04-F06 | 200 と accessToken・refreshToken を返す | 200 | - | - | `[API-AUTH-04-F06] トークンリフレッシュ完了` |
 
 ## 備考
 - accessToken の有効期限は環境変数 JWT_ACCESS_EXPIRES_IN で管理する（1時間）

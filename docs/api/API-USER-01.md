@@ -90,11 +90,11 @@
 
 ## 処理フロー
 
-1. JWT を検証し、未認証の場合は 401 を返す
-2. リクエストボディを JSON としてパースする。失敗時は 400 を返す
-3. リクエストパラメータをバリデーションする。失敗時は 422 を返す
-4. 検索条件（name / email / phone は部分一致、workTypes は OR 条件）で `users` / `user_profiles` テーブルを絞り込む
-5. sortKey / sortOrder に従ってソートする
-6. page / perPage に従ってページングし、該当ページのレコードを取得する
-7. totalCount（全件数）と totalPages を算出する
-8. 200 でユーザー一覧とページング情報を返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-USER-01-F01 | 一覧検索処理開始 | - | - | - | `[API-USER-01-F01] 一覧検索処理開始` |
+| API-USER-01-F02 | JWT 検証：未認証の場合は即時エラーを返す | 401 | `UNAUTHORIZED` | `認証が必要です` | `[API-USER-01-F02] JWT検証失敗: ${error.message}` |
+| API-USER-01-F03 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-USER-01-F03] JSONパース失敗: ${error.message}` |
+| API-USER-01-F04 | リクエストパラメータをバリデーションする | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-USER-01-F04] バリデーション失敗: ${error.message}` |
+| API-USER-01-F05 | 検索条件（name / email / phone は部分一致・workTypes は OR 条件）で `users` / `user_profiles` テーブルを絞り込み、ソート・ページングしてレコードを取得する | 500 | `INTERNAL_SERVER_ERROR` | `予期せぬエラーが発生しました` | `[API-USER-01-F05] DB検索失敗: ${error.message}` |
+| API-USER-01-F06 | totalCount と totalPages を算出して 200 でユーザー一覧とページング情報を返す | 200 | - | - | `[API-USER-01-F06] 一覧検索完了: totalCount=${totalCount}` |

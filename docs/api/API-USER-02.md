@@ -21,18 +21,18 @@
 | birthDate | string | ✓ | YYYY-MM-DD形式・18歳以上・60歳未満 | 生年月日 |
 | gender | string | ✓ | `男性` / `女性` / `その他` のいずれか | 性別 |
 | profileImage | string \| null | - | base64エンコード文字列（data URI形式）・JPEG / PNG / WebP・5MB以下 | プロフィール画像 |
-| phone | string | - | 10〜11桁の数字のみ | 電話番号（ハイフンなし） |
+| phone | string \| null | - | 10〜11桁の数字のみ（null で未設定） | 電話番号（ハイフンなし） |
 | email | string | ✓ | メールアドレス形式 | メールアドレス |
-| password | string | ✓ | 8文字以上 | パスワード |
-| postalCode | string | - | 7桁の数字のみ | 郵便番号（ハイフンなし） |
-| prefecture | string | - | - | 都道府県 |
-| city | string | - | - | 市区町村 |
-| streetAddress | string | - | - | 番地 |
-| building | string | - | - | 建物名・部屋番号 |
-| workTypes | string[] | - | 各要素が `フルタイム` / `パートタイム` / `リモート` / `フリーランス` のいずれか | 希望勤務形態 |
-| qualifications | `{ value: string }[]` | - | 各要素の value が1文字以上 | 資格リスト |
+| password | string | ✓ | 8文字以上・大文字1文字以上・小文字1文字以上・数字1文字以上 | パスワード |
+| postalCode | string \| null | - | 7桁の数字のみ（null で未設定） | 郵便番号（ハイフンなし） |
+| prefecture | string \| null | - | null で未設定 | 都道府県 |
+| city | string \| null | - | null で未設定 | 市区町村 |
+| streetAddress | string \| null | - | null で未設定 | 番地 |
+| building | string \| null | - | null で未設定 | 建物名・部屋番号 |
+| workTypes | string[] \| null | - | 各要素が `フルタイム` / `パートタイム` / `リモート` / `フリーランス` のいずれか | 希望勤務形態（null または `[]` で未設定） |
+| qualifications | `{ value: string }[]` \| null | - | 各要素の value が1文字以上 | 資格リスト（null または `[]` で未設定） |
 | workHistories | WorkHistory[] | ✓ | 1件以上 | 職歴リスト |
-| selfPR | string | - | - | 自己PR |
+| selfPR | string \| null | - | null で未設定 | 自己PR |
 | agreedToTerms | boolean | ✓ | `true` のみ許可 | 利用規約・プライバシーポリシーへの同意 |
 
 **WorkHistory オブジェクト**
@@ -102,12 +102,19 @@
 | 422 | VALIDATION_ERROR | 性別の形式が正しくありません | gender が許可値以外 |
 | 422 | VALIDATION_ERROR | 対応していないファイル形式です | profileImage の MIME タイプが不正 |
 | 422 | VALIDATION_ERROR | ファイルサイズが上限を超えています | profileImage が 5MB 超 |
-| 422 | VALIDATION_ERROR | 電話番号の形式が正しくありません | phone が 10〜11 桁の数字以外 |
+| 422 | VALIDATION_ERROR | 電話番号にハイフンは使用できません（例: 09012345678） | phone にハイフンが含まれる |
+| 422 | VALIDATION_ERROR | 電話番号は半角数字で入力してください | phone に数字以外が含まれる |
+| 422 | VALIDATION_ERROR | 電話番号は10〜11桁で入力してください | phone が 10〜11 桁以外 |
 | 422 | VALIDATION_ERROR | メールアドレスは必須項目です | email が未入力 |
 | 422 | VALIDATION_ERROR | メールアドレスはメールアドレス形式で入力してください | email の形式が不正 |
 | 422 | VALIDATION_ERROR | パスワードは必須項目です | password が未入力 |
 | 422 | VALIDATION_ERROR | パスワードは8文字以上で入力してください | password が 8 文字未満 |
-| 422 | VALIDATION_ERROR | 郵便番号の形式が正しくありません | postalCode が 7 桁の数字以外 |
+| 422 | VALIDATION_ERROR | パスワードには大文字の英字を1文字以上含めてください | password に大文字が含まれない |
+| 422 | VALIDATION_ERROR | パスワードには小文字の英字を1文字以上含めてください | password に小文字が含まれない |
+| 422 | VALIDATION_ERROR | パスワードには数字を1文字以上含めてください | password に数字が含まれない |
+| 422 | VALIDATION_ERROR | 郵便番号にハイフンは使用できません（例: 1234567） | postalCode にハイフンが含まれる |
+| 422 | VALIDATION_ERROR | 郵便番号は半角数字で入力してください | postalCode に数字以外が含まれる |
+| 422 | VALIDATION_ERROR | 郵便番号は7桁で入力してください | postalCode が 7 桁以外 |
 | 422 | VALIDATION_ERROR | 職歴を1件以上入力してください | workHistories が空配列 |
 | 422 | VALIDATION_ERROR | 会社名は必須項目です | workHistories[n].company が未入力 |
 | 422 | VALIDATION_ERROR | 在籍開始月は必須項目です | workHistories[n].startMonth が未入力 |
@@ -118,19 +125,15 @@
 
 ## 処理フロー
 
-1. リクエストボディを JSON としてパースする。失敗時は 400 を返す
-2. `userProfileCreateBackendSchema`（`backend/src/schemas/user.ts`）でバリデーションを実行する。失敗時は 422 を返す
-3. email の重複を `users` テーブルで確認する。既存の場合は 409 を返す
-4. password をハッシュ化（bcrypt）する
-5. トランザクションを開始する
-   a. `users` テーブルにレコードを挿入する（email, passwordHash）
-   b. profileImage が指定されている場合は base64 デコードしてローカルストレージに保存し、URL を取得する
-   c. `user_profiles` テーブルにレコードを挿入する（userId, name, birthDate, gender, profileImageUrl, phone, postalCode, prefecture, city, streetAddress, building, selfPR）
-   d. `user_work_types` テーブルに workTypes を挿入する（workTypes が指定されている場合）
-   e. `user_qualifications` テーブルに qualifications を挿入する（qualifications が指定されている場合）
-   f. `user_work_histories` テーブルに workHistories を挿入する
-6. トランザクションをコミットする
-7. 204 を返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-USER-02-F01 | ユーザープロフィール作成処理開始 | - | - | - | `[API-USER-02-F01] ユーザープロフィール作成処理開始` |
+| API-USER-02-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-USER-02-F02] JSONパース失敗: ${error.message}` |
+| API-USER-02-F03 | `userProfileCreateBackendSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-USER-02-F03] バリデーション失敗: ${error.message}` |
+| API-USER-02-F04 | email の重複を `users` テーブルで確認する | 409 | `CONFLICT` | `メールアドレスが既に登録されています` | `[API-USER-02-F04] メールアドレス重複: email=${email}` |
+| API-USER-02-F05 | password を bcrypt でハッシュ化する | - | - | - | - |
+| API-USER-02-F06 | トランザクション内で `users` / `user_profiles` / `user_work_types` / `user_qualifications` / `user_work_histories` テーブルにレコードを挿入する | 500 | `INTERNAL_SERVER_ERROR` | `予期せぬエラーが発生しました` | `[API-USER-02-F06] DB挿入失敗: ${error.message}` |
+| API-USER-02-F07 | 204 を返す | 204 | - | - | `[API-USER-02-F07] ユーザープロフィール作成完了: userId=${userId}` |
 
 ## 使用するスキーマ
 
@@ -138,5 +141,7 @@
 
 ## 備考
 
-- profileImage は base64 エンコードされた data URI 形式（例: `data:image/jpeg;base64,...`）で送信する
+- profileImage は base64 エンコードされた data URI 形式（例: `data:image/jpeg;base64,...`）で送信する。`null` を指定すると画像なしで登録される。省略（未指定）した場合も同様に画像なしで登録される
 - agreedToTerms はサーバー側でも `true` であることを検証する
+- 任意の文字列フィールド（phone / postalCode / prefecture / city / streetAddress / building / selfPR）は `null` または空文字 `""` を指定すると DB 上で NULL として保存される
+- workTypes / qualifications は `null` または `[]` を指定すると未設定（レコードなし）として保存される

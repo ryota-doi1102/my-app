@@ -75,11 +75,13 @@
 
 ## 処理フロー
 
-1. JWT を検証し、未認証の場合は 401 を返す
-2. パスパラメータ `id` でユーザーを検索する
-3. ユーザーが存在しない・論理削除済みの場合は 404 を返す
-4. `users` / `user_profiles` / `user_work_types` / `user_qualifications` / `user_work_histories` テーブルを JOIN してプロフィール情報を取得する
-5. 200 でプロフィール情報を返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-USER-03-F01 | ユーザープロフィール取得処理開始 | - | - | - | `[API-USER-03-F01] ユーザープロフィール取得処理開始` |
+| API-USER-03-F02 | JWT 検証：未認証の場合は即時エラーを返す | 401 | `UNAUTHORIZED` | `認証が必要です` | `[API-USER-03-F02] JWT検証失敗: ${error.message}` |
+| API-USER-03-F03 | パスパラメータ `id` でユーザーを検索し、存在しない・削除済みの場合は 404 を返す | 404 | `NOT_FOUND` | `ユーザーが見つかりません` | `[API-USER-03-F03] ユーザー未検出: id=${id}` |
+| API-USER-03-F04 | `users` / `user_profiles` / `user_work_types` / `user_qualifications` / `user_work_histories` テーブルを JOIN してプロフィール情報を取得する | 500 | `INTERNAL_SERVER_ERROR` | `予期せぬエラーが発生しました` | `[API-USER-03-F04] DB取得失敗: ${error.message}` |
+| API-USER-03-F05 | 200 でプロフィール情報を返す | 200 | - | - | `[API-USER-03-F05] ユーザープロフィール取得完了: userId=${id}` |
 
 ## 使用するスキーマ
 

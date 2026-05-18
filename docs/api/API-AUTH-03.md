@@ -58,14 +58,14 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. メールアドレスで users テーブルを検索する
-3. 以下の場合は 401 UNAUTHORIZED を返す（理由は統一する）
-   - ユーザーが存在しない
-   - deleted_at が存在する（退会済み）
-   - bcrypt.compare でパスワードが一致しない
-4. JWT（accessToken・refreshToken）を発行する
-5. accessToken・refreshToken をレスポンスで返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-03-F01 | サインイン処理開始 | - | - | - | `[API-AUTH-03-F01] サインイン処理開始` |
+| API-AUTH-03-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-03-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-03-F03 | `signinSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-03-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-03-F04 | メールアドレスで `users` テーブルを検索し、存在・未退会・パスワード一致を確認する | 401 | `UNAUTHORIZED` | `メールアドレスまたはパスワードが正しくありません` | `[API-AUTH-03-F04] 認証失敗: email=${email}` |
+| API-AUTH-03-F05 | JWT（accessToken・refreshToken）を発行し、`refresh_tokens` テーブルに保存する | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-03-F05] DB書き込み失敗: ${error.message}` |
+| API-AUTH-03-F06 | 200 と accessToken・refreshToken を返す | 200 | - | - | `[API-AUTH-03-F06] サインイン完了: userId=${userId}` |
 
 ## 使用するスキーマ
 

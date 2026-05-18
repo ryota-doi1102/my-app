@@ -63,25 +63,17 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. signup_tokens テーブルからトークンを検索する
-3. トークンの有効性を確認する
-   - 存在しない場合 → 401 UNAUTHORIZED
-   - revoked_at が存在する場合（無効化済み）→ 401 UNAUTHORIZED
-   - expires_at が現在時刻より過去の場合（期限切れ）→ 401 UNAUTHORIZED
-   - used_at が存在する場合（使用済み）→ 401 UNAUTHORIZED
-4. トークンに紐づくメールアドレスとリクエストのメールアドレスが一致するか確認する
-   - 一致しない場合 → 401 UNAUTHORIZED
-5. users テーブルにメールアドレスの重複がないか確認する
-   - 重複している場合 → 409 CONFLICT
-6. パスワードを bcrypt でハッシュ化する
-7. トランザクションを開始する
-8. users テーブルにレコードを作成する
-9. user_profiles テーブルにレコードを作成する（空のプロフィール）
-10. signup_tokens の used_at を現在時刻で更新する
-11. トランザクションをコミットする
-12. JWTを発行する
-13. accessToken をレスポンスで返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-02-F01 | サインアップ処理開始 | - | - | - | `[API-AUTH-02-F01] サインアップ処理開始` |
+| API-AUTH-02-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-02-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-02-F03 | `signupSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-02-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-02-F04 | `signup_tokens` テーブルからトークンを検索し、有効性（存在・未失効・有効期限内・未使用・メールアドレス一致）を確認する | 401 | `UNAUTHORIZED` | `トークンが無効または期限切れです` | `[API-AUTH-02-F04] トークン検証失敗: ${reason}` |
+| API-AUTH-02-F05 | `users` テーブルにメールアドレスの重複がないか確認する | 409 | `CONFLICT` | `このメールアドレスは既に登録済みです` | `[API-AUTH-02-F05] メールアドレス重複: email=${email}` |
+| API-AUTH-02-F06 | パスワードを bcrypt でハッシュ化する | - | - | - | - |
+| API-AUTH-02-F07 | トランザクション内で `users` / `user_profiles` テーブルにレコードを作成し、`signup_tokens` の `used_at` を更新する | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-02-F07] DB書き込み失敗: ${error.message}` |
+| API-AUTH-02-F08 | JWT（accessToken）を発行する | - | - | - | - |
+| API-AUTH-02-F09 | 201 と accessToken を返す | 201 | - | - | `[API-AUTH-02-F09] サインアップ完了: userId=${userId}` |
 
 ## 使用するスキーマ
 

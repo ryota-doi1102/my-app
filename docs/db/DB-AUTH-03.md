@@ -10,8 +10,8 @@ DB-AUTH-03
 | id | uuid | ✓ | ✓ | auto | PK |
 | user_id | uuid | ✓ | - | - | トークン発行対象のユーザーID |
 | token | varchar(255) | ✓ | ✓ | - | リフレッシュ用トークン（UUID v4） |
-| created_at | timestamp | ✓ | - | now() | 発行日時 |
 | expires_at | timestamp | ✓ | - | - | 有効期限（発行時刻 + 1日） |
+| created_at | timestamp | ✓ | - | now() | 発行日時 |
 | revoked_at | timestamp | - | - | - | 無効化日時 |
 
 ## 外部キー

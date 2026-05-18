@@ -26,3 +26,9 @@
 | API-USER-03 | GET | /users/:id | 有効 | docs/api/API-USER-03.md | ユーザープロフィール取得 |
 | API-USER-04 | PUT | /users/:id | 有効 | docs/api/API-USER-04.md | ユーザープロフィール更新 |
 | API-USER-05 | DELETE | /users/:id | 有効 | docs/api/API-USER-05.md | ユーザープロフィール削除 |
+| API-USER-06 | DELETE | /users/bulk | 有効 | docs/api/API-USER-06.md | ユーザープロフィール一括削除 |
+| API-USER-07 | GET | /users/template | 有効 | docs/api/API-USER-07.md | テンプレートファイルダウンロード |
+| API-USER-08 | POST | /users/import | 有効 | docs/api/API-USER-08.md | ユーザープロフィールインポート（ジョブ登録） |
+| API-USER-09 | GET | /users/import-jobs/:jobId | 有効 | docs/api/API-USER-09.md | インポートジョブ結果取得 |
+| API-USER-10 | POST | /users/export | 有効 | docs/api/API-USER-10.md | ユーザープロフィールエクスポート（ジョブ登録） |
+| API-USER-11 | GET | /users/export-jobs/:jobId | 有効 | docs/api/API-USER-11.md | エクスポートジョブ結果取得 |

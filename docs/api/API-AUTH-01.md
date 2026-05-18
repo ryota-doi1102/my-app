@@ -52,11 +52,14 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. 既存トークンがある場合は revoked_at を更新して無効化する
-3. crypto.randomUUID() でトークンを生成する
-4. signup_tokens テーブルにレコードを作成する（expires_at = 現在時刻 + 24時間）
-5. トークンをレスポンスで返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-01-F01 | サインアップリクエスト処理開始 | - | - | - | `[API-AUTH-01-F01] サインアップリクエスト処理開始` |
+| API-AUTH-01-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-01-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-01-F03 | `signupRequestSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-01-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-01-F04 | 同一メールアドレスの既存トークンがある場合は `revoked_at` を更新して無効化する | - | - | - | - |
+| API-AUTH-01-F05 | `crypto.randomUUID()` でトークンを生成し `signup_tokens` テーブルにレコードを作成する（`expires_at` = 現在時刻 + 24時間） | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-01-F05] DB書き込み失敗: ${error.message}` |
+| API-AUTH-01-F06 | 201 とトークンを返す | 201 | - | - | `[API-AUTH-01-F06] サインアップトークン発行完了: email=${email}` |
 
 ## 使用するスキーマ
 

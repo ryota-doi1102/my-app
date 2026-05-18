@@ -53,13 +53,15 @@
 
 ## 処理フロー
 
-1. リクエストボディをバリデーションする
-2. メールアドレスに一致するユーザーを検索する（退会済み除く）
-3. ユーザーが存在しない場合は 404 を返す
-4. 既存トークンがある場合は revoked_at を更新して無効化する
-5. crypto.randomUUID() でトークンを生成する
-6. password_reset_tokens テーブルにレコードを作成する（expires_at = 現在時刻 + 24時間）
-7. トークンをレスポンスで返す
+| ID | 処理内容 | ステータスコード | エラーコード | エラーメッセージ | ログ表示内容 |
+|---|---|---|---|---|---|
+| API-AUTH-06-F01 | パスワードリセットトークン発行処理開始 | - | - | - | `[API-AUTH-06-F01] パスワードリセットトークン発行処理開始` |
+| API-AUTH-06-F02 | リクエストボディを JSON としてパースする | 400 | `BAD_REQUEST` | `リクエストの形式が正しくありません` | `[API-AUTH-06-F02] JSONパース失敗: ${error.message}` |
+| API-AUTH-06-F03 | `passwordResetRequestSchema` でバリデーションを実行する | 422 | `VALIDATION_ERROR` | （各バリデーションエラーメッセージ） | `[API-AUTH-06-F03] バリデーション失敗: ${error.message}` |
+| API-AUTH-06-F04 | メールアドレスで `users` テーブルを検索する（退会済み除く） | 404 | `NOT_FOUND` | `このメールアドレスのユーザーが見つかりません` | `[API-AUTH-06-F04] ユーザーが見つかりません: email=${email}` |
+| API-AUTH-06-F05 | 同一メールアドレスの既存トークンがある場合は `revoked_at` を更新して無効化する | - | - | - | - |
+| API-AUTH-06-F06 | `crypto.randomUUID()` でトークンを生成し `password_reset_tokens` テーブルにレコードを作成する（`expires_at` = 現在時刻 + 24時間） | 500 | `INTERNAL_SERVER_ERROR` | `サーバーエラーが発生しました` | `[API-AUTH-06-F06] DB書き込み失敗: ${error.message}` |
+| API-AUTH-06-F07 | 201 とトークンを返す | 201 | - | - | `[API-AUTH-06-F07] パスワードリセットトークン発行完了: email=${email}` |
 
 ## 使用するスキーマ
 

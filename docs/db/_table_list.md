@@ -12,6 +12,7 @@
 | DB-AUTH-01 | users | 有効 | docs/db/DB-AUTH-01.md | ユーザー |
 | DB-AUTH-02 | signup_tokens | 有効 | docs/db/DB-AUTH-02.md | サインアップトークン |
 | DB-AUTH-03 | refresh_tokens | 有効 | docs/db/DB-AUTH-03.md | リフレッシュトークン |
+| DB-AUTH-04 | password_reset_tokens | 有効 | docs/db/DB-AUTH-04.md | パスワードリセットトークン |
 
 ## マスタ（MASTER）
 
@@ -28,3 +29,5 @@
 | DB-USER-02 | user_work_types | 有効 | docs/db/DB-USER-02.md | ユーザー希望勤務形態（中間テーブル） |
 | DB-USER-03 | user_qualifications | 有効 | docs/db/DB-USER-03.md | ユーザー資格 |
 | DB-USER-04 | user_work_histories | 有効 | docs/db/DB-USER-04.md | ユーザー職歴 |
+| DB-USER-05 | import_jobs | 有効 | docs/db/DB-USER-05.md | インポートジョブ |
+| DB-USER-06 | export_jobs | 有効 | docs/db/DB-USER-06.md | エクスポートジョブ |
