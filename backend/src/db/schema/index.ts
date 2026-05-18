@@ -8,3 +8,4 @@ export * from "./DB-USER-01.js";
 export * from "./DB-USER-02.js";
 export * from "./DB-USER-03.js";
 export * from "./DB-USER-04.js";
+export * from "./DB-USER-05.js";
