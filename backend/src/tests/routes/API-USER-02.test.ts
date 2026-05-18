@@ -35,7 +35,7 @@ const MIN_BODY = {
 	birthDate: "1990-01-15",
 	gender: "男性",
 	email: "test@example.com",
-	password: "password123",
+	password: "Password123",
 	workHistories: [
 		{ company: "株式会社ABC", startMonth: "2020-04", role: "エンジニア" },
 	],
@@ -91,7 +91,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 				const { name: _n, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 				expect(json.error.messages[0]).toBe("氏名は必須項目です");
 			});
@@ -99,14 +99,14 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			it("TC-302: nameにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, name: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
 			it("TC-303: nameに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, name: "" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 				expect(json.error.messages[0]).toBe("氏名は必須項目です");
 			});
@@ -118,28 +118,28 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 				const { birthDate: _b, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("生年月日は必須項目です");
 			});
 
 			it("TC-305: birthDateにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, birthDate: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
 			it("TC-306: birthDateに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, birthDate: "" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("生年月日は必須項目です");
 			});
 
 			it("TC-307: YYYY-MM-DD以外の形式を指定する", async () => {
 				const res = await put({ ...MIN_BODY, birthDate: "2000/01/01" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe(
 					"生年月日はYYYY-MM-DD形式で入力してください",
 				);
@@ -148,14 +148,14 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			it("TC-308: 18歳未満の日付を指定する", async () => {
 				const res = await put({ ...MIN_BODY, birthDate: yearsAgoDate(17) });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("18歳未満の方は登録できません");
 			});
 
 			it("TC-309: ちょうど60歳の日付を指定する", async () => {
 				const res = await put({ ...MIN_BODY, birthDate: yearsAgoDate(60) });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("60歳以上の方は登録できません");
 			});
 		});
@@ -166,28 +166,28 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 				const { gender: _g, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("性別は必須項目です");
 			});
 
 			it("TC-311: genderにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, gender: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("性別は必須項目です");
 			});
 
 			it("TC-312: genderに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, gender: "" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("性別の形式が正しくありません");
 			});
 
 			it("TC-313: genderに許可値以外を指定する", async () => {
 				const res = await put({ ...MIN_BODY, gender: "unknown" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("性別の形式が正しくありません");
 			});
 		});
@@ -215,11 +215,19 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 					profileImage: "data:image/gif;base64,R0lGOD",
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("対応していないファイル形式です");
 			});
 
-			it("TC-318: 5MBを超えるbase64画像を指定する", async () => {
+			it("TC-318: 有効なJPEGのbase64文字列を指定する", async () => {
+				const res = await put({
+					...MIN_BODY,
+					profileImage: "data:image/jpeg;base64,/9j/4AAQ",
+				});
+				expect(res.status).toBe(204);
+			});
+
+			it("TC-319: 5MBを超えるbase64画像を指定する", async () => {
 				// base64で5MB超: 5*1024*1024 * 4/3 ≈ 6,990,507文字
 				const largeBase64 = "A".repeat(7_000_000);
 				const res = await put({
@@ -227,73 +235,75 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 					profileImage: `data:image/jpeg;base64,${largeBase64}`,
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("ファイルサイズが上限を超えています");
 			});
 		});
 
 		// --- phone ---
 		describe("phone", () => {
-			it("TC-319: phoneを省略する", async () => {
+			it("TC-320: phoneを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-320: phoneにnullを指定する", async () => {
+			it("TC-321: phoneにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, phone: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-321: phoneに空文字を指定する", async () => {
+			it("TC-322: phoneに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, phone: "" });
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-322: phoneに9桁の数字を指定する", async () => {
+			it("TC-323: phoneに9桁の数字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, phone: "090123456" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.messages[0]).toBe("電話番号の形式が正しくありません");
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"電話番号は10〜11桁で入力してください",
+				);
 			});
 
-			it("TC-323: phoneに12桁の数字を指定する", async () => {
+			it("TC-324: phoneに12桁の数字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, phone: "090123456789" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.messages[0]).toBe("電話番号の形式が正しくありません");
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"電話番号は10〜11桁で入力してください",
+				);
 			});
 		});
 
 		// --- email ---
 		describe("email", () => {
-			it("TC-324: emailを省略する", async () => {
+			it("TC-325: emailを省略する", async () => {
 				const { email: _e, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("メールアドレスは必須項目です");
 			});
 
-			it("TC-325: emailにnullを指定する", async () => {
+			it("TC-326: emailにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, email: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
-			it("TC-326: emailに空文字を指定する", async () => {
+			it("TC-327: emailに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, email: "" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("メールアドレスは必須項目です");
 			});
 
-			it("TC-327: emailにメール形式でない文字列を指定する", async () => {
+			it("TC-328: emailにメール形式でない文字列を指定する", async () => {
 				const res = await put({ ...MIN_BODY, email: "not-an-email" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe(
 					"メールアドレスはメールアドレス形式で入力してください",
 				);
@@ -302,78 +312,103 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- password ---
 		describe("password", () => {
-			it("TC-328: passwordを省略する", async () => {
+			it("TC-329: passwordを省略する", async () => {
 				const { password: _p, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("パスワードは必須項目です");
 			});
 
-			it("TC-329: passwordにnullを指定する", async () => {
+			it("TC-330: passwordにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, password: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
-			it("TC-330: passwordに空文字を指定する", async () => {
+			it("TC-331: passwordに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, password: "" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("パスワードは必須項目です");
 			});
 
-			it("TC-331: passwordに7文字を指定する", async () => {
-				const res = await put({ ...MIN_BODY, password: "pass123" });
+			it("TC-332: passwordに7文字を指定する", async () => {
+				const res = await put({ ...MIN_BODY, password: "Pass123" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.messages[0]).toBe("パスワードは8文字以上で入力してください");
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"パスワードは8文字以上で入力してください",
+				);
+			});
+
+			it("TC-332a: passwordに大文字を含まない文字列を指定する", async () => {
+				const res = await put({ ...MIN_BODY, password: "password1" });
+				expect(res.status).toBe(422);
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"パスワードには大文字の英字を1文字以上含めてください",
+				);
+			});
+
+			it("TC-332b: passwordに小文字を含まない文字列を指定する", async () => {
+				const res = await put({ ...MIN_BODY, password: "PASSWORD1" });
+				expect(res.status).toBe(422);
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"パスワードには小文字の英字を1文字以上含めてください",
+				);
+			});
+
+			it("TC-332c: passwordに数字を含まない文字列を指定する", async () => {
+				const res = await put({ ...MIN_BODY, password: "Passworddd" });
+				expect(res.status).toBe(422);
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"パスワードには数字を1文字以上含めてください",
+				);
 			});
 		});
 
 		// --- postalCode ---
 		describe("postalCode", () => {
-			it("TC-332: postalCodeを省略する", async () => {
+			it("TC-333: postalCodeを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-333: postalCodeにnullを指定する", async () => {
+			it("TC-334: postalCodeにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, postalCode: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-334: postalCodeに空文字を指定する", async () => {
+			it("TC-335: postalCodeに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, postalCode: "" });
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-335: postalCodeに6桁の数字を指定する", async () => {
+			it("TC-336: postalCodeに6桁の数字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, postalCode: "123456" });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.messages[0]).toBe("郵便番号の形式が正しくありません");
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe("郵便番号は7桁で入力してください");
 			});
 		});
 
 		// --- prefecture ---
 		describe("prefecture", () => {
-			it("TC-336: prefectureを省略する", async () => {
+			it("TC-337: prefectureを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-337: prefectureにnullを指定する", async () => {
+			it("TC-338: prefectureにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, prefecture: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-338: prefectureに空文字を指定する", async () => {
+			it("TC-339: prefectureに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, prefecture: "" });
 				expect(res.status).toBe(204);
 			});
@@ -381,19 +416,17 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- city ---
 		describe("city", () => {
-			it("TC-339: cityを省略する", async () => {
+			it("TC-340: cityを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-340: cityにnullを指定する", async () => {
+			it("TC-341: cityにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, city: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-341: cityに空文字を指定する", async () => {
+			it("TC-342: cityに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, city: "" });
 				expect(res.status).toBe(204);
 			});
@@ -401,19 +434,17 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- streetAddress ---
 		describe("streetAddress", () => {
-			it("TC-342: streetAddressを省略する", async () => {
+			it("TC-343: streetAddressを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-343: streetAddressにnullを指定する", async () => {
+			it("TC-344: streetAddressにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, streetAddress: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-344: streetAddressに空文字を指定する", async () => {
+			it("TC-345: streetAddressに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, streetAddress: "" });
 				expect(res.status).toBe(204);
 			});
@@ -421,19 +452,17 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- building ---
 		describe("building", () => {
-			it("TC-345: buildingを省略する", async () => {
+			it("TC-346: buildingを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-346: buildingにnullを指定する", async () => {
+			it("TC-347: buildingにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, building: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-347: buildingに空文字を指定する", async () => {
+			it("TC-348: buildingに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, building: "" });
 				expect(res.status).toBe(204);
 			});
@@ -441,19 +470,17 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- selfPR ---
 		describe("selfPR", () => {
-			it("TC-348: selfPRを省略する", async () => {
+			it("TC-349: selfPRを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-349: selfPRにnullを指定する", async () => {
+			it("TC-350: selfPRにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, selfPR: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-350: selfPRに空文字を指定する", async () => {
+			it("TC-351: selfPRに空文字を指定する", async () => {
 				const res = await put({ ...MIN_BODY, selfPR: "" });
 				expect(res.status).toBe(204);
 			});
@@ -461,19 +488,17 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- workTypes ---
 		describe("workTypes", () => {
-			it("TC-351: workTypesを省略する", async () => {
+			it("TC-352: workTypesを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-352: workTypesにnullを指定する", async () => {
+			it("TC-353: workTypesにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, workTypes: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-353: workTypesに空配列を指定する", async () => {
+			it("TC-354: workTypesに空配列を指定する", async () => {
 				const res = await put({ ...MIN_BODY, workTypes: [] });
 				expect(res.status).toBe(204);
 			});
@@ -481,69 +506,67 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- qualifications ---
 		describe("qualifications", () => {
-			it("TC-354: qualificationsを省略する", async () => {
+			it("TC-355: qualificationsを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-355: qualificationsにnullを指定する", async () => {
+			it("TC-356: qualificationsにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, qualifications: null });
-				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
-				expect(json.error.code).toBe("VALIDATION_ERROR");
+				expect(res.status).toBe(204);
 			});
 
-			it("TC-356: qualificationsに空配列を指定する", async () => {
+			it("TC-357: qualificationsに空配列を指定する", async () => {
 				const res = await put({ ...MIN_BODY, qualifications: [] });
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-357: qualifications[0].valueに空文字を指定する", async () => {
+			it("TC-358: qualifications[0].valueに空文字を指定する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					qualifications: [{ value: "" }],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("資格名は必須項目です");
 			});
 		});
 
 		// --- workHistories ---
 		describe("workHistories", () => {
-			it("TC-358: workHistoriesを省略する", async () => {
+			it("TC-359: workHistoriesを省略する", async () => {
 				const { workHistories: _w, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("職歴を1件以上入力してください");
 			});
 
-			it("TC-359: workHistoriesにnullを指定する", async () => {
+			it("TC-360: workHistoriesにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, workHistories: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
-			it("TC-360: workHistoriesに空配列を指定する", async () => {
+			it("TC-361: workHistoriesに空配列を指定する", async () => {
 				const res = await put({ ...MIN_BODY, workHistories: [] });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("職歴を1件以上入力してください");
 			});
 
-			it("TC-361: workHistories[0].companyを省略する", async () => {
+			it("TC-362: workHistories[0].companyを省略する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [{ startMonth: "2020-04", role: "エンジニア" }],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("会社名は必須項目です");
 			});
 
-			it("TC-362: workHistories[0].companyに空文字を指定する", async () => {
+			it("TC-363: workHistories[0].companyに空文字を指定する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [
@@ -551,33 +574,49 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 					],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("会社名は必須項目です");
 			});
 
-			it("TC-363: workHistories[0].startMonthを省略する", async () => {
+			it("TC-364: workHistories[0].startMonthを省略する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [{ company: "株式会社ABC", role: "エンジニア" }],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("在籍開始月は必須項目です");
 			});
 
-			it("TC-364: workHistories[0].roleを省略する", async () => {
+			it("TC-365: workHistories[0].startMonthにYYYY-MM以外の形式を指定する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [
-						{ company: "株式会社ABC", startMonth: "2020-04" },
+						{
+							company: "株式会社ABC",
+							startMonth: "2020/04",
+							role: "エンジニア",
+						},
 					],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"在籍開始月はYYYY-MM形式で入力してください",
+				);
+			});
+
+			it("TC-366: workHistories[0].roleを省略する", async () => {
+				const res = await put({
+					...MIN_BODY,
+					workHistories: [{ company: "株式会社ABC", startMonth: "2020-04" }],
+				});
+				expect(res.status).toBe(422);
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("役職は必須項目です");
 			});
 
-			it("TC-365: workHistories[0].roleに空文字を指定する", async () => {
+			it("TC-367: workHistories[0].roleに空文字を指定する", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [
@@ -585,11 +624,11 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 					],
 				});
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe("役職は必須項目です");
 			});
 
-			it("TC-366: workHistories[0].endMonthにnullを指定する（現職）", async () => {
+			it("TC-368: workHistories[0].endMonthにnullを指定する（現職）", async () => {
 				const res = await put({
 					...MIN_BODY,
 					workHistories: [
@@ -604,35 +643,54 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 				expect(res.status).toBe(204);
 			});
 
-			it("TC-367: workHistories[0].endMonthを省略する", async () => {
+			it("TC-369: workHistories[0].endMonthを省略する", async () => {
 				const res = await put(MIN_BODY);
 				expect(res.status).toBe(204);
+			});
+
+			it("TC-370: workHistories[0].endMonthにYYYY-MM以外の形式を指定する", async () => {
+				const res = await put({
+					...MIN_BODY,
+					workHistories: [
+						{
+							company: "株式会社ABC",
+							startMonth: "2020-04",
+							endMonth: "2024/03",
+							role: "エンジニア",
+						},
+					],
+				});
+				expect(res.status).toBe(422);
+				const json = (await res.json()) as ErrorResponse;
+				expect(json.error.messages[0]).toBe(
+					"在籍終了月はYYYY-MM形式で入力してください",
+				);
 			});
 		});
 
 		// --- agreedToTerms ---
 		describe("agreedToTerms", () => {
-			it("TC-368: agreedToTermsを省略する", async () => {
+			it("TC-371: agreedToTermsを省略する", async () => {
 				const { agreedToTerms: _a, ...body } = MIN_BODY;
 				const res = await put(body);
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe(
 					"利用規約・プライバシーポリシーへの同意が必要です",
 				);
 			});
 
-			it("TC-369: agreedToTermsにnullを指定する", async () => {
+			it("TC-372: agreedToTermsにnullを指定する", async () => {
 				const res = await put({ ...MIN_BODY, agreedToTerms: null });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.code).toBe("VALIDATION_ERROR");
 			});
 
-			it("TC-370: agreedToTermsにfalseを指定する", async () => {
+			it("TC-373: agreedToTermsにfalseを指定する", async () => {
 				const res = await put({ ...MIN_BODY, agreedToTerms: false });
 				expect(res.status).toBe(422);
-				const json = await res.json() as ErrorResponse;
+				const json = (await res.json()) as ErrorResponse;
 				expect(json.error.messages[0]).toBe(
 					"利用規約・プライバシーポリシーへの同意が必要です",
 				);
@@ -641,7 +699,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 
 		// --- ボディ全体 ---
 		describe("リクエストボディ全体", () => {
-			it("TC-371: リクエストボディを送信しない", async () => {
+			it("TC-374: リクエストボディを送信しない", async () => {
 				const res = await app.request("/api/v1/users", {
 					method: "PUT",
 					headers: { "Content-Type": "application/json" },
@@ -649,7 +707,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 				expect(res.status).toBe(400);
 			});
 
-			it("TC-372: Content-Typeがapplication/jsonでないリクエストを送信する", async () => {
+			it("TC-375: Content-Typeがapplication/jsonでないリクエストを送信する", async () => {
 				const res = await app.request("/api/v1/users", {
 					method: "PUT",
 					headers: { "Content-Type": "text/plain" },
@@ -689,15 +747,19 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 		it("TC-403: phoneにハイフンを含む文字列を指定する", async () => {
 			const res = await put({ ...MIN_BODY, phone: "090-1234-5678" });
 			expect(res.status).toBe(422);
-			const json = await res.json() as ErrorResponse;
-			expect(json.error.messages[0]).toBe("電話番号の形式が正しくありません");
+			const json = (await res.json()) as ErrorResponse;
+			expect(json.error.messages[0]).toBe(
+				"電話番号にハイフンは使用できません（例: 09012345678）",
+			);
 		});
 
 		it("TC-404: postalCodeにハイフンを含む文字列を指定する", async () => {
 			const res = await put({ ...MIN_BODY, postalCode: "123-4567" });
 			expect(res.status).toBe(422);
-			const json = await res.json() as ErrorResponse;
-			expect(json.error.messages[0]).toBe("郵便番号の形式が正しくありません");
+			const json = (await res.json()) as ErrorResponse;
+			expect(json.error.messages[0]).toBe(
+				"郵便番号にハイフンは使用できません（例: 1234567）",
+			);
 		});
 
 		it("TC-405: workTypesに複数の有効な値を指定する", async () => {
@@ -749,9 +811,23 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			);
 			const res = await put(MIN_BODY);
 			expect(res.status).toBe(409);
-			const json = await res.json() as ErrorResponse;
+			const json = (await res.json()) as ErrorResponse;
 			expect(json.error.code).toBe("CONFLICT");
 			expect(json.error.messages[0]).toBe("メールアドレスが既に登録されています");
+		});
+
+		it("TC-410: 任意の文字列フィールドにすべてnullを指定する", async () => {
+			const res = await put({
+				...MIN_BODY,
+				phone: null,
+				postalCode: null,
+				prefecture: null,
+				city: null,
+				streetAddress: null,
+				building: null,
+				selfPR: null,
+			});
+			expect(res.status).toBe(204);
 		});
 	});
 
@@ -765,7 +841,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			);
 			const res = await put(MIN_BODY);
 			expect(res.status).toBe(500);
-			const json = await res.json() as ErrorResponse;
+			const json = (await res.json()) as ErrorResponse;
 			expect(json.error.code).toBe("INTERNAL_SERVER_ERROR");
 			expect(json.is_success).toBe(false);
 		});
@@ -780,7 +856,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			);
 			const res = await put(MIN_BODY);
 			expect(res.status).toBe(500);
-			const json = await res.json() as ErrorResponse;
+			const json = (await res.json()) as ErrorResponse;
 			expect(json.error.code).toBe("INTERNAL_SERVER_ERROR");
 			expect(json.error.messages[0]).toBe("予期せぬエラーが発生しました");
 		});
@@ -792,7 +868,7 @@ describe("API-USER-02 PUT /api/v1/users", () => {
 			);
 			const res = await put(MIN_BODY);
 			expect(res.status).toBe(500);
-			const json = await res.json() as ErrorResponse;
+			const json = (await res.json()) as ErrorResponse;
 			expect(json).not.toHaveProperty("stack");
 			expect(json.error).not.toHaveProperty("stack");
 			vi.unstubAllEnvs();
