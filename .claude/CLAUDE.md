@@ -13,7 +13,7 @@ npm run preview    # Preview production build locally
 npm run claude     # Run Claude Code CLI with .env variables loaded
 ```
 
-No test framework is configured.
+frontend のテストは Vitest + @testing-library/react を使用する（`frontend/` で `npm run test:run`）。
 
 ## Architecture
 
@@ -21,9 +21,9 @@ No test framework is configured.
 
 **Entry point**: `index.html` → `src/main.tsx` → `src/App.tsx`
 
-**Styling**: Plain CSS with nested selectors and CSS custom properties for theming. Light/dark mode is handled via `prefers-color-scheme: dark` in `src/index.css`. No CSS preprocessor or CSS-in-JS.
+**Styling**: Tailwind CSS + shadcn/ui。カスタム CSS ファイルは作成しない。
 
-**State**: Local React hooks only (`useState`). No router or global state library.
+**State**: Local React hooks（`useState`）+ React Router（`react-router-dom`）。グローバル状態管理ライブラリは使用しない。
 
 ## Environment Variables
 
@@ -33,8 +33,8 @@ Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. The `npm run claude` 
 
 ## frontend コーディング規約
 
-詳細は `.claude/commands/frontend-coding-rules.md` を参照。
-概要は `docs/frontend-coding-rules.md` に記載。
+詳細は `/coding-rules-frontend` を参照。
+規約ファイル: `docs/rules/coding/frontend-coding-rules.md`
 
 ### 主なルール（抜粋）
 
@@ -44,27 +44,45 @@ Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`. The `npm run claude` 
 - スタイルは Tailwind CSS のみ（カスタム CSS 禁止）
 - 共通型は `@shared/types/` を優先使用
 - Linter / Formatter は Biome を使用
-- 画面・コンポーネントの `spec.md` は編集時に合わせて更新する
+- 画面仕様書は `docs/screens/SCR-XXX-YY/index.md` で管理する。画面・フックを変更した場合は対応する仕様書を合わせて更新する
 
 ---
 
 ## backend コーディング規約
 
-各規約は `.claude/commands/backend/` に記載：
+各規約は以下のコマンドで参照する：
 
-- API 実装: `.claude/commands/backend-coding-rules-api.md`
-- DB 実装: `.claude/commands/backend-coding-rules-db.md`
-- Unit テスト: `.claude/commands/backend-coding-rules-unit-test.md`
+- 共通（TypeScript・ディレクトリ構成）: `/coding-rules-backend`
+- API 実装: `/coding-rules-backend-api`
+- DB 実装: `/coding-rules-backend-db`
+- Unit テスト: `/coding-rules-backend-unit-test`
+- コメント・ロギング: `/coding-rules-comment-logging`
+- バリデーション: `/coding-rules-validation`
 
-概要は `docs/backend-coding-rules.md` に記載。
+規約ファイル: `docs/rules/coding/`
 
 ---
 
 ## E2E テスト規約
 
 `.claude/commands/e2e-test.md`（CLI: `/e2e-test`）を参照。
-概要は `docs/e2e-testing-rules.md` に記載。
 テストファイルは `e2e/` ディレクトリで管理する。
+
+---
+
+## レビュー
+
+`/review` コマンドでドキュメント・実装を総合レビューする。
+
+```
+/review <対象ファイルパスまたはID>
+```
+
+以下の4観点を一括チェックする：
+1. **ドキュメントの不備** — 規約フォーマット・必須セクション・一覧登録
+2. **実装の不備** — コーディング規約・型安全性・ディレクトリ構成
+3. **整合性** — ドキュメントと実装の内容一致
+4. **影響範囲** — 変更に連動すべきファイルの反映漏れ
 
 ---
 
@@ -111,7 +129,7 @@ npm run shared:check   # ルートで実行
 - **ORM**: Drizzle ORM
 - **DB**: PostgreSQL 16 (via Docker)
 - **Test**: Vitest + @vitest/coverage-v8
-- **Logging**: pino / pino-pretty
+- **Logging**: LogTape（`backend/src/lib/logger.ts` の `getAppLogger`）
 - **Auth**: JWT (hono/jwt)
 
 ### Setup
@@ -155,18 +173,24 @@ npm run docker:down    # docker-compose down
 ```
 backend/
 ├── src/
-│   ├── index.ts          # エントリーポイント（Hono + pino 設定）
+│   ├── index.ts          # エントリーポイント（OpenAPIHono + LogTape 設定）
 │   ├── routes/
 │   │   ├── health.ts     # GET /health
-│   │   └── users.ts      # GET /api/v1/users, POST /api/v1/users
+│   │   ├── auth.ts       # POST /api/v1/auth/...
+│   │   └── users.ts      # PUT/GET/DELETE /api/v1/users/...
 │   ├── middleware/
-│   │   ├── auth.ts       # JWT 認証ミドルウェア
+│   │   ├── auth.ts       # JWT 認証ミドルウェア（requireAuth）
 │   │   └── error.ts      # 共通エラーハンドラー・AppError クラス
+│   ├── schemas/          # backend 固有のスキーマ拡張
+│   ├── services/         # ビジネスロジック（API 単位でファイル分割）
+│   ├── lib/
+│   │   └── logger.ts     # LogTape ロガー（getAppLogger）
 │   ├── db/
 │   │   ├── schema.ts     # Drizzle スキーマ定義
 │   │   └── index.ts      # DB 接続
+│   ├── tests/            # テストファイル（routes/ 配下）
 │   └── types/
-│       └── api.ts        # frontend/backend 共有型定義
+│       └── api.ts        # backend 固有の型定義（ErrorCode / ErrorResponse / SuccessResponse）
 ├── drizzle/              # 生成されたマイグレーションファイル
 ├── drizzle.config.ts
 ├── vitest.config.ts
@@ -182,22 +206,39 @@ backend/
 | Method | Path | 認証 | 説明 |
 |---|---|---|---|
 | GET | /health | 不要 | ヘルスチェック |
+| POST | /api/v1/auth/signup/request | 不要 | サインアップトークン発行 |
+| POST | /api/v1/auth/signup | 不要 | サインアップ実行 |
+| POST | /api/v1/auth/signin | 不要 | サインイン |
+| POST | /api/v1/auth/refresh | 不要 | トークンリフレッシュ |
+| POST | /api/v1/auth/signout | JWT 必須 | サインアウト |
+| POST | /api/v1/auth/password-reset/request | 不要 | パスワードリセットトークン発行 |
+| POST | /api/v1/auth/password-reset | 不要 | パスワードリセット実行 |
 | POST | /api/v1/users | JWT 必須 | ユーザー一覧検索 |
-| PUT | /api/v1/users | 不要 | ユーザー作成 |
+| PUT | /api/v1/users | 不要 | ユーザープロフィール作成 |
+| GET | /api/v1/users/:id | JWT 必須 | ユーザープロフィール取得 |
+| PUT | /api/v1/users/:id | JWT 必須 | ユーザープロフィール更新 |
+| DELETE | /api/v1/users/:id | JWT 必須 | ユーザー論理削除 |
+| DELETE | /api/v1/users/bulk | JWT 必須 | ユーザー一括削除 |
+| GET | /api/v1/users/template | JWT 必須 | CSVテンプレートダウンロード |
+| POST | /api/v1/users/import | JWT 必須 | CSVインポートジョブ登録 |
+| GET | /api/v1/users/import-jobs/:jobId | JWT 必須 | インポートジョブ結果取得 |
+| POST | /api/v1/users/export | JWT 必須 | CSVエクスポートジョブ登録 |
+| GET | /api/v1/users/export-jobs/:jobId | JWT 必須 | エクスポートジョブ結果取得 |
 
 ### Error Response Format
 
 ```json
 {
-  "success": false,
+  "status_code": 404,
+  "is_success": false,
   "error": {
     "code": "NOT_FOUND",
-    "message": "Resource not found"
+    "messages": ["ユーザーが見つかりません"]
   }
 }
 ```
 
-エラーコード一覧: `BAD_REQUEST` / `UNAUTHORIZED` / `FORBIDDEN` / `NOT_FOUND` / `INTERNAL_SERVER_ERROR`
+エラーコード一覧: `BAD_REQUEST` / `UNAUTHORIZED` / `FORBIDDEN` / `NOT_FOUND` / `CONFLICT` / `VALIDATION_ERROR` / `INTERNAL_SERVER_ERROR`
 
 本番環境 (`NODE_ENV=production`) ではスタックトレースを返さない。
 

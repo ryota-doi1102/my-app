@@ -79,3 +79,32 @@ describe('usersService', () => {
 - テストでは実 DB に接続しない
 - DB アクセスは必ずモックする
 - 環境変数は `vitest.config.ts` の `env` で上書きする
+
+---
+
+## API ルートテスト（src/tests/routes/）
+
+API ルートのテストには追加のルールがある。詳細は `docs/rules/testing/api-unit-test-rules.md` を参照。
+
+### テスト仕様書との対応
+
+- テスト仕様書は `docs/tests/api/API-XXX-XX.md` で管理する
+- TC 番号（001〜099: 認証 / 100〜199: クエリ / 200〜299: パラム / 300〜399: ボディ / 400〜499: 分岐 / 500〜599: エラー）
+- 仕様書と実装のメッセージ・ステータス・TC 数は常に同期を保つ
+
+### JWT トークン生成
+
+- `sign` from `hono/jwt` を使う（`jsonwebtoken` は使わない）
+- `vi.stubEnv("JWT_SECRET", ...)` で環境変数を注入する
+- `beforeAll` で `validToken` と `expiredToken` を生成する
+
+### モック・環境変数
+
+- `beforeEach` でサービスのデフォルト戻り値を設定する
+- TC-501: `new Error(...)` (plain Error) を使い、メッセージはアサートしない
+- TC-502: `new AppError(...)` を使い、メッセージをアサートする
+- TC-503: `vi.unstubAllEnvs()` 後に `vi.stubEnv("JWT_SECRET", JWT_SECRET)` で再設定する
+
+### null / undefined 判定
+
+任意フィールドは `|| null` を使い、空文字・undefined を NULL に変換する（`?? null` は使用禁止）。
