@@ -43,6 +43,13 @@
       "when": 1746921600000,
       "tag": "0005_enum_gender_worktype",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1747449470000,
+      "tag": "0006_import_export_jobs",
+      "breakpoints": true
     }
   ]
 }
